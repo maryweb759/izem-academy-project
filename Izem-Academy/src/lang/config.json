@@ -1,0 +1,23 @@
+{
+  "defaultLanguage": "ar",
+  "languages": [
+    {
+      "code": "en",
+      "name": "English",
+      "direction": "ltr",
+      "enabled": true
+    },
+    {
+      "code": "fr",
+      "name": "Français",
+      "direction": "ltr",
+      "enabled": true
+    },
+    {
+      "code": "ar",
+      "name": "العربية",
+      "direction": "rtl",
+      "enabled": true
+    }
+  ]
+}
