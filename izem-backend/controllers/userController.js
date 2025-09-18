@@ -1,6 +1,8 @@
 const User = require('../models/user.js');
 const Recipe = require('../models/recipes.js');
+const Course = require("../models/Course");
 const { registerValidation } = require("../utils/validators.js");
+const { successResponse, errorResponse } = require("../utils/response");
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -14,66 +16,161 @@ const generateToken = (id) => {
         expiresIn: '40d'
     });
 };
-// Enregistrer un nouvel utilisateur
+
 const registerUser = async (req, res) => {
-    try {
-       // Validate
-  const { error } = registerValidation(req.body);
-  if (error) return res.status(400).json({ error: error.details[0].message });
+  try {
+    // 📌 Validation avec Joi
+    const { error } = registerValidation(req.body);
+    if (error) {
+      return res.status(400).json({
+        status: "error",
+        message: error.details[0].message
+      });
+    }
 
-  const { fullName, phone, password, city, courses, role } = req.body;
+    const { fullName, phone, password, city, courses, role } = req.body;
 
-        // Vérification des champs obligatoires
-        if (!fullName || !phone || !password || !city || !courses ) {
-            return res.status(400).json({ 
-                status: "error",
-                message: 'Veuillez remplir tous les champs obligatoires' 
-            });
-        }
+    // 📌 Vérification des champs obligatoires
+    if (!fullName || !phone || !password || !city || !courses) {
+      return res.status(400).json({
+        status: "error",
+        message: "Veuillez remplir tous les champs obligatoires"
+      });
+    }
 
-        // Vérifier si l'utilisateur existe déjà
-        const userExists = await User.findOne({ phone });
+    // 📌 Vérification des cours (doivent exister dans la table Course)
+    if (courses && courses.length > 0) {
+      const validCourses = await Course.find({ _id: { $in: courses } });
 
-        if (userExists) {
-             return res.status(400).json({
+      if (validCourses.length !== courses.length) {
+        return res.status(400).json({
+          status: "error",
+          message: "Un ou plusieurs cours n'existent pas"
+        });
+      }
+    }
+
+    // 📌 Vérifier si l'utilisateur existe déjà
+    const userExists = await User.findOne({ phone });
+    if (userExists) {
+      return res.status(400).json({
         status: "error",
         message: "Le numéro de téléphone existe déjà"
       });
-        }
+    }
 
-        // Hacher le mot de passe
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+    // 📌 Hacher le mot de passe
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-       // Create user
-    const user = await User.create({
+    // 📌 Création de l’utilisateur
+    let user = await User.create({
       fullName,
       phone,
       password: hashedPassword,
       city,
       courses,
-      role: role || "student"
+      role: role || "student",
+       isValidated: false
     });
 
-        // Générer un token simple
-        const token = generateToken(user._id);
+    // 📌 Peupler les cours avec leurs objets complets
+    user = await user.populate("courses");
 
-        res.status(201).json({
-             status: "success",
-            _id: user._id,
-            fullName: user.fullName,
-            phone: user.phone,
-            city: user.city,
-            courses: user.courses,
-            role: user.role,
-            token: token
-        });
-    } catch (error) {
-       res.status(500).json({
+    // 📌 Générer un token JWT
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      status: "success",
+      message: "Utilisateur créé avec succès",
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        phone: user.phone,
+        city: user.city,
+        courses: user.courses, // objets complets
+        role: user.role,
+        isValidated: user.isValidated
+      },
+      token
+    });
+  } catch (error) {
+    console.error("Erreur lors de l'inscription :", error);
+    res.status(500).json({
       status: "error",
       message: "Erreur interne du serveur"
     });
+  }
+};
+
+// controllers/userController.js
+const updateValidate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isValidated } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { isValidated },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "Utilisateur introuvable"
+      });
     }
+
+    res.status(200).json({
+      status: "success",
+      message: "Attribut 'validate' mis à jour avec succès"
+    });
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du validate :", error);
+    res.status(500).json({
+      status: "error",
+      message: "Erreur interne du serveur"
+    });
+  }
+};
+
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().populate("courses");
+    res.status(200).json({
+      status: "success",
+      count: users.length,
+      users
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des utilisateurs :", error);
+    res.status(500).json({ status: "error", message: "Erreur interne du serveur" });
+  }
+};
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ status: "error", message: "Utilisateur introuvable" });
+    }
+
+    // Delete courses owned by this user
+    await Course.deleteMany({ _id: { $in: user.courses } });
+
+    // Delete user
+    await User.findByIdAndDelete(id);
+
+    res.status(200).json({
+      status: "success",
+      message: "Utilisateur et ses cours supprimés avec succès"
+    });
+  } catch (error) {
+    console.error("Erreur lors de la suppression de l'utilisateur :", error);
+    res.status(500).json({ status: "error", message: "Erreur interne du serveur" });
+  }
 };
 
 // Authentifier un utilisateur
@@ -81,16 +178,16 @@ const loginUser = async (req, res) => {
     try {
         const { phone, password } = req.body;
 
-        // Vérifier que l'email et le mot de passe sont fournis
+        // Vérifier que le téléphone et le mot de passe sont fournis
         if (!phone || !password) {
-           return res.status(400).json({
-      status: "error",
-      message: "Le numéro de téléphone et le mot de passe sont obligatoires"
-    });
+            return res.status(400).json({
+                status: "error",
+                message: "Le numéro de téléphone et le mot de passe sont obligatoires"
+            });
         }
 
-        // Vérifier si l'utilisateur existe
-        const user = await User.findOne({ phone });
+        // Vérifier si l'utilisateur existe + peupler les cours
+        const user = await User.findOne({ phone }).populate("courses");
 
         if (!user) {
             return res.status(401).json({
@@ -101,7 +198,6 @@ const loginUser = async (req, res) => {
 
         // Vérifier le mot de passe
         const isMatch = await bcrypt.compare(password, user.password);
-
         if (!isMatch) {
             return res.status(401).json({ 
                 status: "error",
@@ -112,22 +208,112 @@ const loginUser = async (req, res) => {
         // Générer un token 
         const token = generateToken(user._id);
 
-        res.json({
-             status: "success",
-             _id: user._id,
+        return res.json({
+            status: "success",
+            _id: user._id,
             fullName: user.fullName,
             phone: user.phone,
             city: user.city,
-            courses: user.courses,
+            courses: user.courses, // 👉 ici tu auras les objets complets des cours
             role: user.role,
-            token: token
+            token: token,
+            isValidated: user.isValidated
         });
     } catch (error) {
-        res.status(500).json({ 
+        return res.status(500).json({ 
+            status: "error",
             message: 'Erreur lors de la connexion',
             error: error.message 
         });
     }
+};
+const addCourseToUser = async (req, res) => {
+    try {
+        const { userId, courseId } = req.body;
+
+        if (!userId || !courseId) {
+            return res.status(400).json({
+                status: "error",
+                message: "userId et courseId sont obligatoires"
+            });
+        }
+
+        // Vérifier si le user existe
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                status: "error",
+                message: "Utilisateur non trouvé"
+            });
+        }
+
+        // Vérifier si le cours existe
+        const course = await Course.findById(courseId);
+        if (!course) {
+            return res.status(404).json({
+                status: "error",
+                message: "Cours non trouvé"
+            });
+        }
+
+        // Vérifier si le cours est déjà ajouté
+        if (user.courses.includes(courseId)) {
+            return res.status(400).json({
+                status: "error",
+                message: "Ce cours est déjà dans la liste de l'utilisateur"
+            });
+        }
+
+        // Ajouter le cours
+        user.courses.push(courseId);
+        await user.save();
+
+        // Récupérer uniquement les cours peuplés
+        const populatedCourses = await User.findById(userId)
+            .populate("courses", "-__v") // populate sans __v
+            .select("courses"); // ne renvoyer que courses
+
+        return res.status(200).json({
+            status: "success",
+            message: "Cours ajouté avec succès",
+            courses: populatedCourses.courses
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: "error",
+            message: "Erreur lors de l'ajout du cours",
+            error: error.message
+        });
+    }
+};
+
+const updatePassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return errorResponse(res, 400, "Password must be at least 6 characters long");
+    }
+
+// 📌 Hacher le mot de passe
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { password: hashedPassword },
+      { new: true }
+    );
+
+    if (!user) {
+      return errorResponse(res, 404, "User not found");
+    }
+
+    return successResponse(res, 200, "Password updated successfully");
+  } catch (err) {
+    return errorResponse(res, 500, err.message);
+  }
 };
 
 // Obtenir le profil de l'utilisateur
@@ -262,3 +448,8 @@ exports.updateUserProfile = updateUserProfile;
 exports.addFavorite = addFavorite;
 exports.removeFavorite = removeFavorite;
 exports.getFavorites = getFavorites;
+exports.updateValidate = updateValidate;
+exports.getAllUsers = getAllUsers;
+exports.deleteUser = deleteUser;
+exports.addCourseToUser = addCourseToUser;
+exports.updatePassword = updatePassword;

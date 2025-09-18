@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   city: { type: String, required: true },
   courses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Course" }],
   role: { type: String, enum: ["student", "teacher", "admin"], default: "student" },
+  isValidated: { type: Boolean, default: false },  // ✅ NEW FIELD
   createdOn: { type: Date, default: Date.now }
 });
 

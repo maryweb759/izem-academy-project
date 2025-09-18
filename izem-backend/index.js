@@ -12,6 +12,7 @@ const { errorHandler } = require('./middleware/errorHandler.js');
 const recipes =require('./models/recipes.js');
 const db = require('./config/db.js');
 const userRoutes = require('./routes/userRoutes.js');
+const courseRoutes = require("./routes/courseRoutes");
 
 //crer une appli express 
 const app = express();
@@ -33,6 +34,8 @@ app.get('/',(req,res) =>{
 app.use('/api/recipes', recipeRoutes);
 // Routes pour les utilisateurs
 app.use('/api/users', userRoutes);
+// routes pour les course 
+app.use("/api/courses", courseRoutes);
 // Middleware de gestion d'erreur
 app.use(errorHandler);
 

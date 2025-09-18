@@ -9,7 +9,12 @@ const {
     updateUserProfile,
     addFavorite,
     removeFavorite,
-    getFavorites
+    getFavorites, 
+    updateValidate,
+    getAllUsers,
+    deleteUser,
+    addCourseToUser,
+    updatePassword
 } = require('../controllers/userController');
 const { protect } = require('../middleware/AuthentificationHandler');
 
@@ -20,6 +25,11 @@ router.post('/login', loginUser);
 // Routes de profil (protégées)
 router.get('/profile/:id', protect, getUserProfile);
 router.put('/profile/:id', protect, updateUserProfile);
+router.put("/:id/validate", updateValidate);
+router.get("/", getAllUsers);
+router.delete("/:id", deleteUser);
+router.post("/addCourse", addCourseToUser);
+router.put("/:id/password", updatePassword);
 
 // Routes des favoris (protégées)
 router.post('/favorites/:id', protect, addFavorite);
