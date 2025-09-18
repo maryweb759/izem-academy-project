@@ -1,5 +1,7 @@
 const User = require('../models/user.js');
 const Recipe = require('../models/recipes.js');
+const { registerValidation } = require("../utils/validators.js");
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
@@ -15,71 +17,84 @@ const generateToken = (id) => {
 // Enregistrer un nouvel utilisateur
 const registerUser = async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+       // Validate
+  const { error } = registerValidation(req.body);
+  if (error) return res.status(400).json({ error: error.details[0].message });
+
+  const { fullName, phone, password, city, courses, role } = req.body;
 
         // Vérification des champs obligatoires
-        if (!username || !email || !password) {
+        if (!fullName || !phone || !password || !city || !courses ) {
             return res.status(400).json({ 
+                status: "error",
                 message: 'Veuillez remplir tous les champs obligatoires' 
             });
         }
 
         // Vérifier si l'utilisateur existe déjà
-        const userExists = await User.findOne({ 
-            $or: [{ email }, { username }] 
-        });
+        const userExists = await User.findOne({ phone });
 
         if (userExists) {
-            return res.status(400).json({ 
-                message: 'Un utilisateur avec cet email ou ce nom d\'utilisateur existe déjà' 
-            });
+             return res.status(400).json({
+        status: "error",
+        message: "Le numéro de téléphone existe déjà"
+      });
         }
 
         // Hacher le mot de passe
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Créer l'utilisateur
-        const user = await User.create({
-            username,
-            email,
-            password: hashedPassword
-        });
+       // Create user
+    const user = await User.create({
+      fullName,
+      phone,
+      password: hashedPassword,
+      city,
+      courses,
+      role: role || "student"
+    });
 
         // Générer un token simple
         const token = generateToken(user._id);
 
         res.status(201).json({
+             status: "success",
             _id: user._id,
-            username: user.username,
-            email: user.email,
+            fullName: user.fullName,
+            phone: user.phone,
+            city: user.city,
+            courses: user.courses,
+            role: user.role,
             token: token
         });
     } catch (error) {
-        res.status(500).json({ 
-            message: 'Erreur lors de l\'enregistrement de l\'utilisateur',
-            error: error.message 
-        });
+       res.status(500).json({
+      status: "error",
+      message: "Erreur interne du serveur"
+    });
     }
 };
 
 // Authentifier un utilisateur
 const loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { phone, password } = req.body;
 
         // Vérifier que l'email et le mot de passe sont fournis
-        if (!email || !password) {
-            return res.status(400).json({ 
-                message: 'Veuillez fournir un email et un mot de passe' 
-            });
+        if (!phone || !password) {
+           return res.status(400).json({
+      status: "error",
+      message: "Le numéro de téléphone et le mot de passe sont obligatoires"
+    });
         }
 
         // Vérifier si l'utilisateur existe
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ phone });
 
         if (!user) {
-            return res.status(401).json({ 
+            return res.status(401).json({
+                status: "error", 
                 message: 'Utilisateur non trouvé' 
             });
         }
@@ -89,6 +104,7 @@ const loginUser = async (req, res) => {
 
         if (!isMatch) {
             return res.status(401).json({ 
+                status: "error",
                 message: 'Mot de passe incorrect' 
             });
         }
@@ -97,9 +113,13 @@ const loginUser = async (req, res) => {
         const token = generateToken(user._id);
 
         res.json({
-            _id: user._id,
-            username: user.username,
-            email: user.email,
+             status: "success",
+             _id: user._id,
+            fullName: user.fullName,
+            phone: user.phone,
+            city: user.city,
+            courses: user.courses,
+            role: user.role,
             token: token
         });
     } catch (error) {
