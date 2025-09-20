@@ -30,7 +30,7 @@ const MobileMenu = ({ navItems, isActive, mobileOpen, setMobileOpen }) => {
       <hr />
 
       {/* User Actions */}
-      {isLoggedIn ? (
+      {!isLoggedIn ? (
         <div className="flex flex-col gap-2">
           <button
             onClick={() => {

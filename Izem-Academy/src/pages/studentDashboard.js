@@ -1,13 +1,25 @@
 import { useState } from "react";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, useNavigate } from "react-router-dom";
 import image from "../assets/student-admin.png";
 import {purchasedCoursesData} from "../data/courses";
 import PurchasedCourses from '../components/PurchasedCourses';
+import useAuthStore from "../zustand/stores/authStore";
 
 // ✅ Import lucide-react icons
 import { Menu, X, Home, User, BookOpen, StickyNote, LogOut } from "lucide-react";
 
 function Sidebar({ isOpen, setIsOpen }) {
+    const navigate = useNavigate();
+
+    const {  logout: logoutFromStore } = useAuthStore();
+ const handleLogout = async () => {
+    try {
+      logoutFromStore();
+      navigate("/");
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion :", error.message);
+    }
+  };
   return (
     <>
       {/* Overlay (for mobile only) */}
@@ -45,7 +57,10 @@ function Sidebar({ isOpen, setIsOpen }) {
 
         {/* Logout */}
         <div>
-          <button className="w-full bg-white text-primary rounded-lg py-2 hover:bg-gray-100 flex items-center justify-center gap-2">
+          <button 
+          className="w-full bg-white text-primary rounded-lg py-2 hover:bg-gray-100 flex items-center justify-center gap-2"
+           onClick={handleLogout}
+          >
             <LogOut size={18} /> تسجيل الخروج
           </button>
         </div>
@@ -136,6 +151,8 @@ export default function StudentDashboard() {
           <PurchasedCourses courses={purchasedCoursesData} />
 
   </div>} />
+    <Route path="dashboard" element={ <PurchasedCourses courses={purchasedCoursesData} />} /> {/* added */}
+
           <Route path="profile" element={<div className="p-6">👤 حسابي</div>} />
           <Route path="courses" element={<div className="p-6">📚 دوراتي</div>} />
           <Route path="notes" element={<div className="p-6">📝 ملاحظاتي</div>} />

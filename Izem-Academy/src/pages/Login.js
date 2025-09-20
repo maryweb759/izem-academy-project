@@ -33,44 +33,56 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const intl = useIntl();
   const { dir } = useLanguageStore();
-  const { isLoggedIn } = useAuthStore();
+const { isLoggedIn, role } = useAuthStore();  // ⬅️ pull role from store
 
   const isRTL = dir === "rtl";
 
   useEffect(() => {
-    if (isLoggedIn) {
+  if (isLoggedIn) {
+    if (role === "student") {
+      navigate("/student_dashboard");
+    } else if (role === "ROLE_ADMIN") {
+      navigate("/dashboard");
+    } else {
       navigate("/home");
     }
-  }, [isLoggedIn, navigate]);
+  }
+}, [isLoggedIn, role, navigate]);
 
   const handleToggleChange = (value) => {
     setSelectedValue(value);
   };
 
-  const onSubmit = async (data) => {
-    setLoading(true);
-    try {
-      const response = await signIn(data);
-      login(response);
+ const onSubmit = async (data) => {
+  setLoading(true);
+  try {
+    const response = await signIn(data);
+    login(response);
 
-      // Vérifiez le rôle de l'utilisateur
-      if (response.roles.includes("ROLE_ADMIN")) {
-        navigate("/dashboard");
-      } else {
-        navigate("/home");
-      }
-    } catch (error) {
-      console.error("Erreur de connexion :", error);
-      if (error.response && error.response.data.message) {
-        setLoginError(error.response.data.message);
-      } else {
-        setLoginError(errorMessage);
-      }
-      openErrorModal();
-    } finally {
-      setLoading(false);
+    console.log("User role from API:", response.role);
+
+    if (response.role === "student") {
+      navigate("/student_dashboard");
+    } else if (response.role === "ROLE_ADMIN") {
+      navigate("/dashboard");
+    } else {
+      navigate("/home");
     }
-  };
+  } catch (error) {
+    console.error("Erreur de connexion :", error);
+    if (error.response?.data?.message) {
+      setLoginError(error.response.data.message);
+    } else {
+      setLoginError(error.message || errorMessage);
+    }
+    openErrorModal();
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
 
   return (
     <div> 

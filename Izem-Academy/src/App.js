@@ -55,7 +55,6 @@ function App() {
              <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/register/:referral_code" element={<Register />} />
-                                      <Route path="/student_dashboard" element={<StudentDashboard />} />
 
             <Route
               path="/reset-password/:tokenRestPassword"
@@ -70,7 +69,7 @@ function App() {
 
             {/* Routes protégées */}
             <Route element={<PrivateRoute />}>
-              {/* <Route path="/student_dashboard" element={<Home />} /> */}
+<Route path="/student_dashboard/*" element={<StudentDashboard />} />
               <Route path="/withdraw/:rtc_wallet" element={<Withdraw />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/change_password" element={<ChangePassword />} />
@@ -86,6 +85,7 @@ function App() {
               <Route path="/account/:referral_code" element={<Account />} />
               <Route path="/notification" element={<Notification />} />
               <Route path="/dashboard" element={<Dashboard />} />
+
             </Route>
           </Routes>
            <Footer />

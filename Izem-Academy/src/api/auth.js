@@ -1,7 +1,7 @@
 import api from './base'
 
 export const signIn = async (data) => {
-	const res = await api.post('/auth/signIn', data, {
+	const res = await api.post('/users/login', data, {
 		headers: {
 		'Content-Type': 'application/json', 
 		},
@@ -21,7 +21,7 @@ export const logout=async(token)=>{
 }
 
 export const signUp=async(data)=>{
-    const res = await api.post('/auth/signUp',data, {
+    const res = await api.post('/users/register',data, {
         headers: {
             'Content-Type': 'application/json', 
         },

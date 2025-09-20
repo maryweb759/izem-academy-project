@@ -74,9 +74,7 @@ const Register = () => {
     try {
       delete data.confirm_password;
       // If referral_code is not defined or empty, set it to null
-      data.referral_code = data.referral_code?.trim()
-        ? data.referral_code
-        : null;
+      
       const response = await signUp(data);
       reset();
       setSuccessMessage(response.message);
@@ -160,7 +158,7 @@ const Register = () => {
       className={`w-full pr-10 pl-4 py-2 h-[53px] border rounded-lg focus:outline-none focus:ring-1 focus:ring-main ${
         errors.username ? "border-main" : "border-border"
       }`}
-      {...register("username", {
+      {...register("fullName", {
         required: "هذا الحقل مطلوب",
         minLength: {
           value: 4,

@@ -2,7 +2,7 @@ import axios from "axios";
 import useLanguageStore from "../zustand/stores/languageStore";
 import useAuthStore from "../zustand/stores/authStore";
 
-export const BASE_URL = "https://pullandpush.net/api";
+export const BASE_URL = "http://localhost:3000/api";
 
 const api = axios.create({ baseURL: BASE_URL });
 api.interceptors.request.use((config) => {
