@@ -71,7 +71,7 @@ const registerUser = async (req, res) => {
       city,
       courses,
       role: role || "student",
-       isValidated: false
+      isValidated: false
     });
 
     // 📌 Peupler les cours avec leurs objets complets
@@ -80,19 +80,17 @@ const registerUser = async (req, res) => {
     // 📌 Générer un token JWT
     const token = generateToken(user._id);
 
+    // ✅ Même structure que login
     res.status(201).json({
       status: "success",
-      message: "Utilisateur créé avec succès",
-      user: {
-        _id: user._id,
-        fullName: user.fullName,
-        phone: user.phone,
-        city: user.city,
-        courses: user.courses, // objets complets
-        role: user.role,
-        isValidated: user.isValidated
-      },
-      token
+      _id: user._id,
+      fullName: user.fullName,
+      phone: user.phone,
+      city: user.city,
+      courses: user.courses,
+      role: user.role,
+      token,
+      isValidated: user.isValidated
     });
   } catch (error) {
     console.error("Erreur lors de l'inscription :", error);
@@ -102,6 +100,7 @@ const registerUser = async (req, res) => {
     });
   }
 };
+
 
 // controllers/userController.js
 const updateValidate = async (req, res) => {
