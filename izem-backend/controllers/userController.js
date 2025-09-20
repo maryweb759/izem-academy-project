@@ -190,18 +190,18 @@ const loginUser = async (req, res) => {
         const user = await User.findOne({ phone }).populate("courses");
 
         if (!user) {
-            return res.status(401).json({
+            return res.status(400).json({
                 status: "error", 
-                message: 'Utilisateur non trouvé' 
+                message: 'لم يتم العثور على المستخدم' 
             });
         }
 
         // Vérifier le mot de passe
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ 
+            return res.status(400).json({ 
                 status: "error",
-                message: 'Mot de passe incorrect' 
+                message: 'كلمة المرور غير صحيحة' 
             });
         }
 
