@@ -119,7 +119,7 @@ const Navbar = () => {
               <User className="w-10 h-10 text-primary border border-primary rounded-full p-1" />
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-gray-900">
-                  {user?.name || "Utilisateur"}
+                  {user?.fullName || "Utilisateur"}
                 </span>
                 <span className="text-xs text-gray-500">
                   {user?.role || "Etudiant"}

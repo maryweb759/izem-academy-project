@@ -11,7 +11,7 @@ import { Menu, X, Home, User, BookOpen, StickyNote, LogOut } from "lucide-react"
 function Sidebar({ isOpen, setIsOpen }) {
     const navigate = useNavigate();
 
-    const {  logout: logoutFromStore } = useAuthStore();
+    const { user, logout: logoutFromStore } = useAuthStore();
  const handleLogout = async () => {
     try {
       logoutFromStore();
@@ -127,7 +127,9 @@ function Notes() {
 
 /* Main Component */
 export default function StudentDashboard() {
-  const [user] = useState("جون");
+    const { user } = useAuthStore();
+
+  // const [user] = useState("جون");
   const [isOpen, setIsOpen] = useState(true); // Sidebar open by default
 
   return (
@@ -142,7 +144,7 @@ export default function StudentDashboard() {
         }`}
       >
         {/* Header */}
-        <Header user={user} toggleSidebar={() => setIsOpen(!isOpen)} />
+        <Header user={user?.fullName} toggleSidebar={() => setIsOpen(!isOpen)} />
 
         {/* Nested Routes */}
         <Routes>
