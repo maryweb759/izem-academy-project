@@ -29,10 +29,10 @@ const PurchasedCourses = ({ courses }) => {
         {/* ➕ Add New Course Card */}
         <div
           onClick={() => setShowPopup(true)}
-          className="relative pt-12 w-full max-w-sm mx-auto cursor-pointer"
+          className="relative pt-8 w-full max-w-sm mx-auto cursor-pointer"
         >
-          <div className="relative rounded-2xl border-2 border-dashed border-gray-300 hover:border-gray-500 transition p-8 pt-16 flex flex-col items-center justify-center text-center h-full">
-            <Plus className="w-16 h-16 text-gray-400" />
+          <div className="relative rounded-2xl border-2 border-dashed border-gray-300 hover:border-gray-500 transition p-8 flex flex-col items-center justify-center text-center h-full">
+            <Plus className="w-14 h-14 text-gray-400" />
             <p className="mt-4 text-gray-500 font-medium">إضافة دورة جديدة</p>
           </div>
         </div>

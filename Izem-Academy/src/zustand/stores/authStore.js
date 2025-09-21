@@ -1,23 +1,27 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+
 const useAuthStore = create(
   persist(
     (set, get) => ({
       isLoggedIn: false,
-      user: null,     // will hold the whole response object
+      user: null,     // will hold the full user object
       token: null,
-      role: null,     // single string role
+      role: null,
       isValidated: null,
 
-      // --- Login ---
-      login: (responseData) =>
+      // --- Authenticate (works for login & register) ---
+      authenticate: (responseData) => {
+        const { token, role, isValidated, ...userData } = responseData;
+
         set({
           isLoggedIn: true,
-          user: responseData,          // keep the full response for UI/admin
-          token: responseData.token,   // backend sends "token"
-          role: responseData.role,     // backend sends single string role
-          isValidated: responseData.isValidated,
-        }),
+          user: userData,     // everything except token/role/isValidated
+          token,
+          role,
+          isValidated,
+        });
+      },
 
       // --- Logout ---
       logout: () =>
@@ -30,17 +34,10 @@ const useAuthStore = create(
         }),
 
       // --- Refresh token (placeholder) ---
-      // ❗ Your backend doesn’t return a refreshToken in login response
-      // If you implement refresh API later, update this function.
       refreshTokenFn: async () => {
         try {
           const { token } = get();
           if (!token) return null;
-
-          // Example: call backend refresh endpoint
-          // const { data } = await api.post("/users/refresh", { token });
-          // set({ token: data.newToken });
-          // return data.newToken;
 
           console.warn("⚠ refreshTokenFn not implemented yet");
           return null;
@@ -56,4 +53,5 @@ const useAuthStore = create(
     }
   )
 );
+
 export default useAuthStore;

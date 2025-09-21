@@ -23,7 +23,7 @@ const Login = () => {
   } = useForm();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [selectedValue, setSelectedValue] = useState("login");
-  const login = useAuthStore((state) => state.login);
+  const login = useAuthStore((state) => state.authenticate);
   const navigate = useNavigate();
   const [isErrorModalOpen, setErrorModalOpen] = useState(false);
   const [loginError, setLoginError] = useState("");

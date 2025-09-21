@@ -16,8 +16,9 @@ import TestimonialsSlider from '../components/TestimonialsSlider';
 import titles from "../data/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import { cities } from "../data/algerianCities"; 
-import  {courses } from "../data/courses"; 
 import CoursesMultiSelect from "../components/coursesMultiselect";
+import { getCourses } from "../api/course"; // adjust path if needed
+import useAuthStore from "../zustand/stores/authStore";
 
 
 const Register = () => {
@@ -40,12 +41,38 @@ const Register = () => {
   const [localErrorMessage, setLocalErrorMessage] = useState("");
   const errorMessage = useErrorStore((state) => state.errorMessage);
   const [loading, setLoading] = useState(false);
+    const authenticate = useAuthStore((state) => state.authenticate);
+
   const navigate = useNavigate();
   const intl = useIntl();
   const { dir } = useLanguageStore();
   const isRTL = dir === "rtl" ? true : false;
     const [currentIndex, setCurrentIndex] = useState(0);
+const [courses, setCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+useEffect(() => {
+    async function fetchCourses() {
+      try {
+        const data = await getCourses();
 
+        if (data.status === "success" && Array.isArray(data.data)) {
+          // normalize API response
+          const normalizedCourses = data.data.map((c) => ({
+            id: c._id, // use API _id as id
+            title: c.title,
+            price: c.price,
+          }));
+          setCourses(normalizedCourses);
+        }
+      } catch (err) {
+        console.error("Error fetching courses:", err);
+      } finally {
+        setLoadingCourses(false);
+      }
+    }
+
+    fetchCourses();
+  }, []);
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) =>
@@ -67,30 +94,46 @@ const Register = () => {
     setSelectedValue(value);
   };
 
-  const onSubmit = async (data) => {
-    const selectedObjects = courses.filter(c => data.courses.includes(String(c.id)));
-    console.log("ids:", data.courses, "objects:", selectedObjects);
-    setLoading(true);
-    try {
-      delete data.confirm_password;
-      // If referral_code is not defined or empty, set it to null
-      
-      const response = await signUp(data);
-      reset();
-      setSuccessMessage(response.message);
-      setSuccessModalOpen(true);
-    } catch (error) {
-      console.error("Erreur de connexion :", error);
-      if (error.response && error.response.data.message) {
-        setLocalErrorMessage(error.response.data.message);
-      } else {
-        setLocalErrorMessage(errorMessage);
-      }
-      setErrorModalOpen(true);
-    } finally {
-      setLoading(false);
+ const onSubmit = async (data) => {
+  const selectedObjects = courses.filter((c) =>
+    data.courses.includes(String(c.id))
+  );
+  console.log("ids:", data.courses, "objects:", selectedObjects);
+
+  setLoading(true);
+
+  try {
+    // remove confirm_password before sending
+    delete data.confirm_password;
+
+    const response = await signUp(data);
+     authenticate(response);
+    // ✅ handle success
+    // reset();
+
+    // check role safely
+    console.log("User role from API:", response.role);
+
+    if (response.role === "student") {
+      navigate("/student_dashboard");
+    } else if (response.role === "ROLE_ADMIN") {
+      navigate("/dashboard");
+    } else {
+      navigate("/home");
     }
-  };
+  } catch (error) {
+   console.error("Erreur de connexion :", error.response.data);
+      if (error.response && error.response.data.message) {
+      setLocalErrorMessage(error.response.data.message);
+    } else {
+      setLocalErrorMessage(error.message || errorMessage);
+    }
+    setErrorModalOpen(true);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
      <div> 
@@ -357,13 +400,17 @@ const Register = () => {
       )}
     </div>
 {/* courses dropdown */}
-<CoursesMultiSelect
-        control={control}
-        name="courses"
-        courses={courses}
-        intl={intl}
-        errors={errors}
-      />
+{loadingCourses ? (
+        <p className="text-gray-500">جاري تحميل الدورات...</p>
+      ) : (
+        <CoursesMultiSelect
+          control={control}
+          name="courses"
+          courses={courses}
+          intl={intl}
+          errors={errors}
+        />
+      )}
       </div>
        <button
   type="submit"
@@ -392,6 +439,11 @@ const Register = () => {
     </div>
     </div>
 <TestimonialsSlider/>
+  <ErrorModal
+        isOpen={isErrorModalOpen}
+        closeModal={() => setErrorModalOpen(false)}
+        message={localErrorMessage}
+      />
 </div>
   );
 };

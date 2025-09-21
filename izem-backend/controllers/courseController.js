@@ -2,33 +2,35 @@ const Course = require("../models/Course");
 const { successResponse, errorResponse } = require("../utils/response");
 
 // 1 - Create course
+// 1 - Create course
 exports.createCourse = async (req, res) => {
   try {
-    const { code, title, price } = req.body;
+    const { code, title, subtitle, price } = req.body;
 
-    if (!code || !title || !price) {
+    if (!code || !title || !subtitle || !price) {
       return errorResponse(res, 400, "All fields are required");
     }
 
-    const newCourse = new Course({ code, title, price });
+    const newCourse = new Course({ code, title, subtitle, price });
     await newCourse.save();
 
     const allCourses = await Course.find();
     return successResponse(res, 201, "Course created successfully", allCourses);
   } catch (err) {
-          return errorResponse(res, 500, err.message);
-
+    return errorResponse(res, 500, err.message);
   }
 };
 
+
+// 2 - Update course
 // 2 - Update course
 exports.updateCourse = async (req, res) => {
   try {
-    const { code, title, price } = req.body;
+    const { code, title, subtitle, price } = req.body;
 
     const updatedCourse = await Course.findByIdAndUpdate(
       req.params.id,
-      { code, title, price },
+      { code, title, subtitle, price }, // ✅ include subtitle
       { new: true, runValidators: true }
     );
 
@@ -41,6 +43,7 @@ exports.updateCourse = async (req, res) => {
     return errorResponse(res, 500, err.message);
   }
 };
+
 
 // 3 - Delete course
 exports.deleteCourse = async (req, res) => {
