@@ -1,6 +1,15 @@
 import api from './base'
 
-
+// new api 
+export const savePurchasedCourses=async(data,token)=>{
+    const res = await api.post('/users/addCourse', data, {
+		headers: {
+            Authorization: `Bearer `+token
+		},
+	})
+    return res.data
+  }
+  // 
 export const getCurrentUser = async (token) => {
     try {
       const res = await api.get("/users/getCurrentUser", {
@@ -34,7 +43,6 @@ export const getCurrentUser = async (token) => {
 		},
 	})
     return res.data
-
 
   }
   export  const  changeMyPassword=async(data,token)=>{

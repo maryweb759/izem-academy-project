@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect  } from "react";
 import { Routes, Route, Link, useNavigate } from "react-router-dom";
 import image from "../assets/student-admin.png";
 import PurchasedCourses from "../components/PurchasedCourses";
 import useAuthStore from "../zustand/stores/authStore";
 import { Menu, X, Home, User, BookOpen, StickyNote, LogOut } from "lucide-react";
+import { getCourses } from "../api/course"; // adjust path if needed
 
 const menuItems = [
   { to: "dashboard", label: "لوحة التحكم", icon: <Home size={18} /> },
@@ -99,8 +100,40 @@ const Placeholder = ({ children }) => <div className="p-6">{children}</div>;
 export default function StudentDashboard() {
   const { user } = useAuthStore();
   const [isOpen, setIsOpen] = useState(true);
+const [allCourses, setAllCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+useEffect(() => {
+    async function fetchCourses() {
+      try {
+        setLoadingCourses(true);
+        const data = await getCourses();
 
-  const coursesElement = <PurchasedCourses courses={user?.courses || []} />;
+        if (data.status === "success" && Array.isArray(data.data)) {
+          // normalize API response
+          const normalizedCourses = data.data.map((c) => ({
+            id: c._id, // use API _id as id
+            title: c.title,
+            price: c.price,
+          }));
+           setAllCourses(normalizedCourses);
+        }
+      } catch (err) {
+        console.error("Error fetching courses:", err);
+      } finally {
+        setLoadingCourses(false);
+      }
+    }
+
+    fetchCourses();
+  }, []);
+  const coursesElement = (
+    <PurchasedCourses
+      courses={user?.courses || []}
+      allCourses={allCourses}
+      loadingCourses={loadingCourses}
+      userID={user?._id}
+    />
+  );
 
   return (
     <div className="flex min-h-screen bg-gray-100">

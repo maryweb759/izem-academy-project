@@ -3,6 +3,7 @@ const Recipe = require('../models/recipes.js');
 const Course = require("../models/Course");
 const { registerValidation } = require("../utils/validators.js");
 const { successResponse, errorResponse } = require("../utils/response");
+const mongoose = require('mongoose'); // if not already required
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -227,64 +228,102 @@ const loginUser = async (req, res) => {
     }
 };
 const addCourseToUser = async (req, res) => {
-    try {
-        const { userId, courseId } = req.body;
+  try {
+    const { userId, courseIds } = req.body;
 
-        if (!userId || !courseId) {
-            return res.status(400).json({
-                status: "error",
-                message: "userId et courseId sont obligatoires"
-            });
-        }
-
-        // Vérifier si le user existe
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({
-                status: "error",
-                message: "Utilisateur non trouvé"
-            });
-        }
-
-        // Vérifier si le cours existe
-        const course = await Course.findById(courseId);
-        if (!course) {
-            return res.status(404).json({
-                status: "error",
-                message: "Cours non trouvé"
-            });
-        }
-
-        // Vérifier si le cours est déjà ajouté
-        if (user.courses.includes(courseId)) {
-            return res.status(400).json({
-                status: "error",
-                message: "Ce cours est déjà dans la liste de l'utilisateur"
-            });
-        }
-
-        // Ajouter le cours
-        user.courses.push(courseId);
-        await user.save();
-
-        // Récupérer uniquement les cours peuplés
-        const populatedCourses = await User.findById(userId)
-            .populate("courses", "-__v") // populate sans __v
-            .select("courses"); // ne renvoyer que courses
-
-        return res.status(200).json({
-            status: "success",
-            message: "Cours ajouté avec succès",
-            courses: populatedCourses.courses
-        });
-    } catch (error) {
-        return res.status(500).json({
-            status: "error",
-            message: "Erreur lors de l'ajout du cours",
-            error: error.message
-        });
+    // basic presence checks
+    if (!userId || !Array.isArray(courseIds) || courseIds.length === 0) {
+      return res.status(400).json({
+        status: "error",
+        message: "userId et courseIds (array) sont obligatoires"
+      });
     }
+
+    // validate userId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        status: "error",
+        message: "userId invalide"
+      });
+    }
+
+    // Validate each courseId: must be non-null string and valid ObjectId
+    const invalidCourseEntries = courseIds
+      .map((id, idx) => ({ id, idx }))
+      .filter(item => !item.id || typeof item.id !== "string" || !mongoose.Types.ObjectId.isValid(item.id));
+
+    if (invalidCourseEntries.length > 0) {
+      // build a readable list of invalid entries to help the client debug
+      const invalidCourseIds = invalidCourseEntries.map(e =>
+        e.id === null ? `null at index ${e.idx}` : `${String(e.id)} at index ${e.idx}`
+      );
+
+      return res.status(400).json({
+        status: "error",
+        message: "courseIds must be an array of valid course id strings",
+        invalidCourseIds
+      });
+    }
+
+    // find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "Utilisateur non trouvé"
+      });
+    }
+
+    // dedupe courseIds (client might accidentally send duplicates)
+    const uniqueCourseIds = [...new Set(courseIds)];
+
+    // load existing course docs (only titles needed)
+    const courses = await Course.find({ _id: { $in: uniqueCourseIds } }).select("title");
+    const courseMap = new Map(courses.map(c => [c._id.toString(), c.title]));
+
+    const existingUserCourseIds = new Set(user.courses.map(c => c.toString()));
+
+    const newCourses = [];
+    const skippedCourses = [];
+
+    for (const cid of uniqueCourseIds) {
+      const title = courseMap.get(cid);
+      if (!title) {
+        // course not found in DB -> ignore (keeps previous behaviour of skipping non-existing courses)
+        continue;
+      }
+
+      if (existingUserCourseIds.has(cid)) {
+        skippedCourses.push(title);
+        continue;
+      }
+
+      // add course id to user (store as ObjectId)
+      user.courses.push(new mongoose.Types.ObjectId(cid));
+      newCourses.push(title);
+      existingUserCourseIds.add(cid);
+    }
+
+    // Save only if we added something
+    if (newCourses.length > 0) {
+      await user.save();
+    }
+
+    return res.status(200).json({
+      status: "completed successfully",
+      message: "Cours ajouté avec succès",
+      newCourses,
+      skippedCourses
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Erreur lors de l'ajout des cours",
+      error: error.message
+    });
+  }
 };
+
 
 const updatePassword = async (req, res) => {
   try {

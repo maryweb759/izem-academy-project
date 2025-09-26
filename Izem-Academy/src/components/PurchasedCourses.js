@@ -1,13 +1,43 @@
 import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import PurchasedCourseCard from "./PurchasedCourseCard";
+import { savePurchasedCourses } from "../api/users"; // 🔹 API wrapper
+import CoursesMultiSelect from "./coursesMultiselect";
+import ResponsePopup from "../utils/ResponsePopup";
+
+import { useIntl } from "react-intl";
 import { Plus } from "lucide-react";
 
-const PurchasedCourses = ({ courses }) => {
+const PurchasedCourses = ({ courses, allCourses, loadingCourses, userID }) => {
   const [showPopup, setShowPopup] = useState(false);
+    const [responsePopup, setResponsePopup] = useState(null); // store API response
+  const { control, handleSubmit, reset,  formState: { errors }, } = useForm();
+  const intl = useIntl();
 
   // 🔹 Define your circle colors
   const circleColors = ["bg-brandYellow", "bg-mainRed", "bg-primary"];
+  const onSubmit = async (data) => {
+    try {
+      console.log('ids...........', data.courses);
+      const payload = {
+        userId: userID,
+        courseIds: data.courses, // extract IDs only
+      };
 
+      const res = await savePurchasedCourses(payload);
+
+      // save response for popup display
+      setResponsePopup(res);
+      setShowPopup(false); // close add-course modal
+      reset();
+    } catch (err) {
+      console.error("Failed to save courses", err);
+      setResponsePopup({
+        status: "error",
+        message: err?.response?.data?.message || "Unexpected error occurred",
+      });
+    }
+  };
   return (
    <section className="py-6 px-4">
       {/* 🔹 Section Title */}
@@ -39,7 +69,7 @@ const PurchasedCourses = ({ courses }) => {
       </div>
 
       {/* 🔹 Pop-up Modal */}
-      {showPopup && (
+       {showPopup && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
           <div className="bg-white p-6 rounded-2xl shadow-xl w-96 relative">
             <button
@@ -48,20 +78,43 @@ const PurchasedCourses = ({ courses }) => {
             >
               ✕
             </button>
+
             <h2 className="text-xl font-bold mb-4">إضافة دورة جديدة</h2>
-            <p className="text-gray-600 mb-6">
-              هنا يمكنك إضافة تفاصيل الدورة الجديدة الخاصة بك.
-            </p>
-            <button
-              onClick={() => setShowPopup(false)}
-              className="w-full py-2 bg-mainDarkColor text-white rounded-lg hover:opacity-90 transition"
-            >
-              تأكيد
-            </button>
+
+            {loadingCourses ? (
+              <p className="text-gray-500">جاري تحميل الدورات...</p>
+            ) : (
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <CoursesMultiSelect
+                          control={control}
+                          name="courses"
+                          courses={allCourses}
+                          intl={intl}
+                          errors={errors}
+                        />
+                
+               
+               
+
+                <button
+                  type="submit"
+                  className="mt-6 w-full py-2 bg-primary rounded-full text-white  hover:opacity-90 transition"
+                >
+                  تأكيد
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}
+      {responsePopup && (
+  <ResponsePopup
+    response={responsePopup}
+    onClose={() => setResponsePopup(null)}
+  />
+)}
     </section>
+    
   );
 };
 

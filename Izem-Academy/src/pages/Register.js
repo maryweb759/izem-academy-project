@@ -50,6 +50,8 @@ const Register = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
 const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
+  const { isLoggedIn, role } = useAuthStore();  // ⬅️ pull role from store
+
 useEffect(() => {
     async function fetchCourses() {
       try {
@@ -93,6 +95,17 @@ useEffect(() => {
   const handleToggleChange = (value) => {
     setSelectedValue(value);
   };
+   useEffect(() => {
+    if (isLoggedIn) {
+      if (role === "student") {
+        navigate("/student_dashboard");
+      } else if (role === "ROLE_ADMIN") {
+        navigate("/dashboard");
+      } else {
+        navigate("/home");
+      }
+    }
+  }, [isLoggedIn, role, navigate]);
 
  const onSubmit = async (data) => {
   const selectedObjects = courses.filter((c) =>
@@ -199,7 +212,7 @@ useEffect(() => {
       type="text"
       placeholder=" Amine Boumedian"
       className={`w-full pr-10 pl-4 py-2 h-[53px] border rounded-lg focus:outline-none focus:ring-1 focus:ring-main ${
-        errors.username ? "border-main" : "border-border"
+        errors.fullName ? "border-main" : "border-border"
       }`}
       {...register("fullName", {
         required: "هذا الحقل مطلوب",
@@ -221,8 +234,8 @@ useEffect(() => {
     <User className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
   </div>
 
-  {errors.username && (
-    <p className="mt-1 text-sm text-main">{errors.username.message}</p>
+  {errors.fullName && (
+    <p className="mt-1 text-sm text-main">{errors.fullName.message}</p>
   )}
 </div>
 
