@@ -5,11 +5,13 @@ import PurchasedCourses from "../components/PurchasedCourses";
 import useAuthStore from "../zustand/stores/authStore";
 import { Menu, X, Home, User, BookOpen, StickyNote, LogOut } from "lucide-react";
 import { getCourses } from "../api/course"; // adjust path if needed
+import Profile from "../pages/student/profile"; // adjust path if needed
+
 
 const menuItems = [
   { to: "dashboard", label: "لوحة التحكم", icon: <Home size={18} /> },
   { to: "profile", label: "حسابي", icon: <User size={18} /> },
-  { to: "courses", label: "دوراتي", icon: <BookOpen size={18} /> },
+  // { to: "courses", label: "دوراتي", icon: <BookOpen size={18} /> },
   { to: "notes", label: "ملاحظاتي", icon: <StickyNote size={18} /> },
 ];
 
@@ -147,9 +149,17 @@ useEffect(() => {
         <Routes>
           <Route index element={coursesElement} />
           <Route path="dashboard" element={coursesElement} />
-          <Route path="profile" element={<Placeholder>👤 حسابي</Placeholder>} />
-          <Route path="courses" element={<Placeholder>📚 دوراتي</Placeholder>} />
-          <Route path="notes" element={<Placeholder>📝 ملاحظاتي</Placeholder>} />
+            <Route path="profile" element={<Profile />} />   {/* ✅ new profile screen */}
+          {/* <Route path="courses" element={<Placeholder>📚 دوراتي</Placeholder>} /> */}
+<Route
+  path="notes"
+  element={
+    <div className="flex flex-col items-center justify-center h-full text-gray-600">
+      <span className="text-5xl mb-4">📝</span>
+      <p className="text-lg font-medium">لا توجد ملاحظات متاحة حاليا</p>
+    </div>
+  }
+/>
         </Routes>
       </div>
     </div>
