@@ -2,7 +2,7 @@ import api from './base'
 
 // new api 
 export const savePurchasedCourses=async(data,token)=>{
-    const res = await api.post('/users/addCourse', data, {
+    const res = await api.post('/enrollment/request', data, {
 		headers: {
             Authorization: `Bearer `+token
 		},

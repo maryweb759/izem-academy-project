@@ -13,7 +13,7 @@ const recipes =require('./models/recipes.js');
 const db = require('./config/db.js');
 const userRoutes = require('./routes/userRoutes.js');
 const courseRoutes = require("./routes/courseRoutes");
-
+const enrollementRoutes = require("./routes/courseEnrollementRoutes.js");
 //crer une appli express 
 const app = express();
 
@@ -36,6 +36,8 @@ app.use('/api/recipes', recipeRoutes);
 app.use('/api/users', userRoutes);
 // routes pour les course 
 app.use("/api/courses", courseRoutes);
+// routes pour les course enrollement 
+app.use("/api", enrollementRoutes);
 // Middleware de gestion d'erreur
 app.use(errorHandler);
 

@@ -3,6 +3,7 @@ const Recipe = require('../models/recipes.js');
 const Course = require("../models/Course");
 const { registerValidation } = require("../utils/validators.js");
 const { successResponse, errorResponse } = require("../utils/response");
+const CourseEnrollment = require("../models/courseEnrollementSchema.js");
 const mongoose = require('mongoose'); // if not already required
 
 const bcrypt = require('bcryptjs');
@@ -32,23 +33,11 @@ const registerUser = async (req, res) => {
     const { fullName, phone, password, city, courses, role } = req.body;
 
     // 📌 Vérification des champs obligatoires
-    if (!fullName || !phone || !password || !city || !courses) {
+    if (!fullName || !phone || !password || !city) {
       return res.status(400).json({
         status: "error",
         message: "Veuillez remplir tous les champs obligatoires"
       });
-    }
-
-    // 📌 Vérification des cours (doivent exister dans la table Course)
-    if (courses && courses.length > 0) {
-      const validCourses = await Course.find({ _id: { $in: courses } });
-
-      if (validCourses.length !== courses.length) {
-        return res.status(400).json({
-          status: "error",
-          message: "Un ou plusieurs cours n'existent pas"
-        });
-      }
     }
 
     // 📌 Vérifier si l'utilisateur existe déjà
@@ -64,31 +53,49 @@ const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 📌 Création de l’utilisateur
+    // 📌 Création de l’utilisateur (⚠️ ne pas inclure courses ici)
     let user = await User.create({
       fullName,
       phone,
       password: hashedPassword,
       city,
-      courses,
       role: role || "student",
       isValidated: false
     });
 
-    // 📌 Peupler les cours avec leurs objets complets
-    user = await user.populate("courses");
+    // 📌 Validation des cours s’ils sont envoyés
+    if (Array.isArray(courses) && courses.length > 0) {
+      const validCourses = await Course.find({ _id: { $in: courses } });
+
+      if (validCourses.length !== courses.length) {
+        return res.status(400).json({
+          status: "error",
+          message: "Un ou plusieurs cours n'existent pas"
+        });
+      }
+
+      // 📌 Créer une demande d’inscription
+      const enrollmentRequest = new CourseEnrollment({
+        user: user._id,
+        courses: validCourses.map(c => c._id),
+        totalAmount: validCourses.reduce((sum, c) => sum + c.price, 0),
+        status: "pending"
+      });
+
+      await enrollmentRequest.save();
+    }
 
     // 📌 Générer un token JWT
     const token = generateToken(user._id);
 
-    // ✅ Même structure que login
     res.status(201).json({
       status: "success",
+      message: "Utilisateur créé. Demande d'inscription aux cours en attente de validation.",
       _id: user._id,
       fullName: user.fullName,
       phone: user.phone,
       city: user.city,
-      courses: user.courses,
+      courses: [],
       role: user.role,
       token,
       isValidated: user.isValidated
@@ -97,10 +104,13 @@ const registerUser = async (req, res) => {
     console.error("Erreur lors de l'inscription :", error);
     res.status(500).json({
       status: "error",
-      message: "Erreur interne du serveur"
+      message: "Erreur interne du serveur",
+      error: error.message
     });
   }
 };
+
+
 
 
 // controllers/userController.js

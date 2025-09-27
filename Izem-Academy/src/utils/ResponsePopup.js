@@ -7,7 +7,7 @@ export default function ResponsePopup({ response, onClose }) {
 
   if (!response) return null;
 
-  const { status, newCourses, skippedCourses, message } = response;
+  const { status,totalAmount, requestedCourses, skippedCourses, message } = response;
 
   // if error → use ErrorModal instead of this popup
   if (status === "error") {
@@ -30,6 +30,28 @@ export default function ResponsePopup({ response, onClose }) {
         >
           ✕
         </button>
+         {/* New Courses */}
+        {requestedCourses?.length > 0 && (
+          <>
+            {/* <h2 className="text-lg font-bold m-4 p-2 bg-green-100">
+              تمت إضافة الدورة بنجاح ✅
+            </h2> */}
+           <h2 className="text-lg font-bold m-4 p-2 bg-green-100">
+  تم تقديم الطلب بنجاح، يرجى دفع{' '}
+  <span className="font-extrabold text-xl ">
+    {totalAmount} دج
+  </span>{' '}
+  وإرسال الإيصال إلى المشرف، وسيتم الموافقة عليه خلال 12 ساعة
+</h2>
+
+
+            <ul className="list-disc list-inside text-secondDarkColor">
+              {requestedCourses.map((c, i) => (
+                <li key={i}>{c}</li>
+              ))}
+            </ul>
+          </>
+        )}
 
         {/* Skipped Courses */}
         {skippedCourses?.length > 0 && (
@@ -45,19 +67,7 @@ export default function ResponsePopup({ response, onClose }) {
           </>
         )}
 
-        {/* New Courses */}
-        {newCourses?.length > 0 && (
-          <>
-            <h2 className="text-lg font-bold m-4 p-2 bg-green-100">
-              تمت إضافة الدورة بنجاح ✅
-            </h2>
-            <ul className="list-disc list-inside text-secondDarkColor">
-              {newCourses.map((c, i) => (
-                <li key={i}>{c}</li>
-              ))}
-            </ul>
-          </>
-        )}
+       
       </div>
     </div>
   );
