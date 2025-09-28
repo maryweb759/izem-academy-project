@@ -7,7 +7,6 @@ import ContactBar from "../ContactBar";
 import { useNavigate, useLocation } from "react-router-dom";
 import useAuthStore from "../../zustand/stores/authStore";
 import { logout } from "../../api/auth";
-import { getAllNotif } from "../../api/users";
 import { useQuery } from "@tanstack/react-query";
 
 const navItems = [
@@ -29,11 +28,11 @@ const Navbar = () => {
   const isActive = (path) => location.pathname === path;
 
   const { isLoggedIn, token, logout: logoutFromStore, user } = useAuthStore();
-  useQuery({
-    queryKey: ["notifications"],
-    queryFn: () => getAllNotif(token),
-    enabled: isLoggedIn,
-  });
+  // useQuery({
+  //   queryKey: ["notifications"],
+  //   queryFn: () => getAllNotif(token),
+  //   enabled: isLoggedIn,
+  // });
 
   const handleLogout = async () => {
     try {
