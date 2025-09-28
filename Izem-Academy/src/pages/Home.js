@@ -116,25 +116,7 @@ function Home() {
 
   return (
     <div className="bg-bgColor flex flex-col items-center justify-center  p-6 sm:p-10 md:p-20">
-      {/* <div className="w-full  bg-white  rounded-xl shadow-sm py-4 sm:py-8 px-4 mb-6 sm:mb-8">
-      <div className="flex justify-between items-center">
-        <button
-          className="p-1 text-gray-600 hover:text-gray-800"
-          onClick={() => navigator.clipboard.writeText(userData?.referral_code)}
-        >
-          <img src={copy} alt='copy'/>
-        </button>
-        <div className='flex flex-col'>
-         <p className=' text-secondDarkColor font-roboto text-xl font-normal'>
-         رمز الاحالة
-         </p>
-         <p className='text-darkGrey  font-roboto text-sm font-normal'>
-          {userData?.referral_code}
-         </p>
-        </div>
-      </div>
-    </div> */}
-    <HeroSection />
+    
       {/* Stats Grid */}
       <div className="w-full grid grid-cols-3 gap-4 py-4 sm:py-8 mb-6 sm:mb-8">
         <div className="bg-white rounded-xl shadow-sm p-3 text-center">

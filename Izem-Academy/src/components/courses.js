@@ -61,7 +61,7 @@ const CoursesSection = () => {
   const [activeTab, setActiveTab] = useState("baccalaureate");
 
   return (
-    <div className="w-full  bg-customBlue shadow-lg px-6 pt-6">
+<div className="w-full bg-customBlue shadow-lg px-6 pt-6 mt-8 sm:mt-0">
          <div className="container">
 
       <h1 className="text-3xl lg:text-5xl xl:text-6xl font-bold font-inter text-mainDarkColor mb-6 px-4 leading-tight">
