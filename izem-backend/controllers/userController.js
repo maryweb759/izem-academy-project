@@ -151,18 +151,27 @@ const updateValidate = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const { page, limit, skip } = paginate(req.query.page, req.query.limit);
-    
+
     const search = req.query.search || "";
-    const filter = search 
-      ? { 
+
+    // Base filter to exclude teacher and admin
+    const baseFilter = {
+      role: { $nin: ["teacher", "admin"] },
+    };
+
+    // Add search conditions if provided
+    const filter = search
+      ? {
+          ...baseFilter,
           $or: [
             { name: { $regex: search, $options: "i" } },
-            { email: { $regex: search, $options: "i" } }
-          ]
+            { email: { $regex: search, $options: "i" } },
+          ],
         }
-      : {};
+      : baseFilter;
 
     const totalUsers = await User.countDocuments(filter);
+
     const users = await User.find(filter)
       .populate("courses")
       .skip(skip)
@@ -174,13 +183,16 @@ const getAllUsers = async (req, res) => {
       count: users.length,
       totalUsers,
       pagination: getPaginationMeta(page, limit, totalUsers),
-      users
+      users,
     });
   } catch (error) {
     console.error("Erreur lors de la récupération des utilisateurs :", error);
-    res.status(500).json({ status: "error", message: "Erreur interne du serveur" });
+    res
+      .status(500)
+      .json({ status: "error", message: "Erreur interne du serveur" });
   }
 };
+
 const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
