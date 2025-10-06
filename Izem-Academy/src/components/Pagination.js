@@ -25,7 +25,7 @@ const Pagination = ({ currentPage, totalPages, paginate }) => {
           key={i + 1}
           className={`w-10 h-10 flex items-center justify-center border rounded-md text-sm font-medium ${
             currentPage === i
-              ? "border-red-500 text-red-500 font-bold bg-gray-100"
+              ? "border-primary text-primary font-bold bg-gray-100"
               : "border-gray-300 text-gray-700"
           }`}
         >

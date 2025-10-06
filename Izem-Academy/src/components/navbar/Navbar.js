@@ -27,13 +27,20 @@ const Navbar = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  const { isLoggedIn, token, logout: logoutFromStore, user } = useAuthStore();
+  const { isLoggedIn, token,role, logout: logoutFromStore, user } = useAuthStore();
   // useQuery({
   //   queryKey: ["notifications"],
   //   queryFn: () => getAllNotif(token),
   //   enabled: isLoggedIn,
   // });
-
+const handleNavigation = () => {
+  const routes = {
+    student: "/student_dashboard",
+    admin: "/admin_dashboard",
+  };
+  
+  navigate(routes[role] || "/home");
+};
   const handleLogout = async () => {
     try {
       await logout(token);
@@ -112,16 +119,16 @@ const Navbar = () => {
             </>
           ) : (
             <div
-              className="flex items-center gap-3 cursor-pointer"
-              onClick={() => navigate("/student_dashboard")}
-            >
+  className="flex items-center gap-3 cursor-pointer"
+  onClick={handleNavigation}
+>
               <User className="w-10 h-10 text-primary border border-primary rounded-full p-1" />
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-gray-900">
                   {user?.fullName || "Utilisateur"}
                 </span>
                 <span className="text-xs text-gray-500">
-                  {user?.role || "Etudiant"}
+                  {role  || "Etudiant"}
                 </span>
               </div>
             </div>

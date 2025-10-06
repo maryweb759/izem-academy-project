@@ -9,6 +9,35 @@ export const savePurchasedCourses=async(data,token)=>{
 	})
     return res.data
   }
+  export const getAllUsers = async (token, page = 1, limit = 10, search = "") => {
+  const res = await api.get('/users', {
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    params: {
+      page,
+      limit,
+      search
+    }
+  });
+  return res.data;
+};
+  export  const  updateUserPassword=async(data, userID, token)=>{
+    const res = await api.put(`/users/${userID}/password`, data, {
+		headers: {
+            Authorization: `Bearer `+token
+		},
+	})
+    return res.data
+  }
+  export  const  deleteUser=async( userID, token)=>{
+    const res = await api.delete(`/users/${userID}`, {
+		headers: {
+            Authorization: `Bearer `+token
+		},
+	})
+    return res.data
+  }
   // 
 export const getCurrentUser = async (token) => {
     try {

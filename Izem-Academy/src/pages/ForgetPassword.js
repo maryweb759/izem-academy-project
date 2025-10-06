@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import Modal from "react-modal";
 import { demandeRenitialisation } from "../api/auth";
 import { X } from "lucide-react";
-import ErrorModal from "../components/ErrorModal";
+import ErrorModal from "../components/modals/ErrorModal";
 import useErrorStore from "../zustand/stores/useErrorStore";
 import { ClipLoader } from "react-spinners";
 import { FormattedMessage, useIntl } from "react-intl";

@@ -6,14 +6,14 @@ import { Link } from "react-router-dom";
 import useAuthStore from "../zustand/stores/authStore";
 import { signIn } from "../api/auth";
 import { useNavigate } from "react-router-dom";
-import ErrorModal from "../components/ErrorModal";
+import ErrorModal from "../components/modals/ErrorModal";
 import useErrorStore from "../zustand/stores/useErrorStore";
 import { ClipLoader } from "react-spinners";
 import { FormattedMessage, useIntl } from "react-intl";
 import useLanguageStore from "../zustand/stores/languageStore";
 import heroimage2 from "../assets/heroimage2.png"
 import TestimonialsSlider from '../components/TestimonialsSlider';
-
+import FormInput from "../components/FormInput";
 
 const Login = () => {
   const {
@@ -41,8 +41,8 @@ const { isLoggedIn, role } = useAuthStore();  // ⬅️ pull role from store
   if (isLoggedIn) {
     if (role === "student") {
       navigate("/student_dashboard");
-    } else if (role === "ROLE_ADMIN") {
-      navigate("/dashboard");
+    } else if (role === "admin") {
+      navigate("/admin_dashboard");
     } else {
       navigate("/home");
     }
@@ -63,8 +63,8 @@ const { isLoggedIn, role } = useAuthStore();  // ⬅️ pull role from store
 
     if (response.role === "student") {
       navigate("/student_dashboard");
-    } else if (response.role === "ROLE_ADMIN") {
-      navigate("/dashboard");
+    } else if (response.role === "admin") {
+      navigate("/admin_dashboard");
     } else {
       navigate("/home");
     }
@@ -128,91 +128,55 @@ const { isLoggedIn, role } = useAuthStore();  // ⬅️ pull role from store
 
  <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Fields Wrapper */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ">
-        {/* Phone Number Field */}
-        <div className="w-full">
-          <label className="block mb-2 text-sm font-medium text-mainDarkColor text-right">
-            رقم الهاتف
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="53 30 37 69 05"
-              className={`w-full pr-10 pl-4 py-2 h-[53px] border rounded-lg focus:outline-none focus:ring-1 focus:ring-main ${
-                errors.phone ? "border-main" : "border-border"
-              }`}
-              {...register("phone", {
-                required: "هذا الحقل مطلوب",
-                pattern: {
-                  value: /^(05|06|07)\d{8}$/,
-                  message:
-                    "رقم الهاتف غير صالح. يجب أن يبدأ بـ 05 أو 06 أو 07 ويتكون من 10 أرقام",
-                },
-              })}
-            />
-            <Phone className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-          </div>
-          {errors.phone && (
-            <p className="mt-1 text-sm text-main">{errors.phone.message}</p>
-          )}
-        </div>
+     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {/* Phone Number */}
+  <FormInput
+    id="phone"
+    label="رقم الهاتف"
+    placeholder="53 30 37 69 05"
+    register={register}
+    errors={errors}
+    Icon={Phone}
+    validationRules={{
+      required: "هذا الحقل مطلوب",
+      pattern: {
+        value: /^(05|06|07)\d{8}$/,
+        message: "رقم الهاتف غير صالح. يجب أن يبدأ بـ 05 أو 06 أو 07 ويتكون من 10 أرقام",
+      },
+    }}
+  />
 
-        {/* Password Field */}
-        <div className="w-full">
-         <label className="block mb-2 text-sm font-medium text-mainDarkColor text-right">
-  كلمة السر{" "}
-  <span className="text-gray-400 font-normal text-xs">
-    (إذا نسيت كلمة السر تواصل معنا)
-  </span>
-</label>
-
-          <div className="relative">
-            <input
-              type={passwordVisible ? "text" : "password"}
-              placeholder={intl.formatMessage({
-                id: "Login.form.password.placeholder",
-                defaultMessage: "كلمة السر",
-              })}
-              className={`w-full pr-12 pl-4 py-2 h-[53px] border rounded-lg focus:outline-none focus:ring-1 focus:ring-main rtl
-                ${errors.password ? "border-main" : "border-border"}`}
-              {...register("password", {
-                required: intl.formatMessage({
-                  id: "Login.form.password.required",
-                  defaultMessage: "هذا الحقل مطلوب",
-                }),
-                minLength: {
-                  value: 6,
-                  message: intl.formatMessage({
-                    id: "Login.form.password.minLength",
-                    defaultMessage: "كلمة السر يجب أن تحتوي على الأقل على 6 أحرف",
-                  }),
-                },
-              })}
-            />
-
-            {/* Lock Icon */}
-            <Lock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-
-            {/* Eye Toggle */}
-            <button
-              type="button"
-              onClick={() => setPasswordVisible(!passwordVisible)}
-              className={`absolute top-1/2 -translate-y-1/2 ${
-                isRTL ? "left-3" : "right-10"
-              } text-gray-500 flex items-center justify-center`}
-            >
-              {passwordVisible ? (
-                <Eye className="h-5 w-5 text-main" />
-              ) : (
-                <EyeOff className="h-5 w-5 text-[#9E9E9E]" />
-              )}
-            </button>
-          </div>
-          {errors.password && (
-            <p className="mt-1 text-sm text-main">{errors.password.message}</p>
-          )}
-        </div>
-      </div>
+  {/* Password */}
+  <FormInput
+    id="password"
+    label="كلمة السر"
+    labelNote="(إذا نسيت كلمة السر تواصل معنا)"
+    placeholder={intl.formatMessage({
+      id: "Login.form.password.placeholder",
+      defaultMessage: "كلمة السر",
+    })}
+    register={register}
+    errors={errors}
+    Icon={Lock}
+    showPasswordToggle={true}
+    passwordVisible={passwordVisible}
+    onPasswordToggle={() => setPasswordVisible(!passwordVisible)}
+    isRTL={isRTL}
+    validationRules={{
+      required: intl.formatMessage({
+        id: "Login.form.password.required",
+        defaultMessage: "هذا الحقل مطلوب",
+      }),
+      minLength: {
+        value: 6,
+        message: intl.formatMessage({
+          id: "Login.form.password.minLength",
+          defaultMessage: "كلمة السر يجب أن تحتوي على الأقل على 6 أحرف",
+        }),
+      },
+    }}
+  />
+</div>
        <button
   type="submit"
   disabled={loading}

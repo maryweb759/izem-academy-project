@@ -1,5 +1,5 @@
 import { Phone, User, MapPin, Shield } from "lucide-react";
-import useAuthStore from "../../zustand/stores/authStore";
+import useAuthStore from "../../../zustand/stores/authStore";
 
 export default function Profile() {
   const { user, role } = useAuthStore(); // 👈 we get user data from your auth store

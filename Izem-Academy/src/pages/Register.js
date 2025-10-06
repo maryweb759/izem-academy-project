@@ -5,8 +5,9 @@ import { Eye, EyeOff, Phone, Lock, User, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { signUp } from "../api/auth";
-import SuccessModal from "../components/SuccessModal";
-import ErrorModal from "../components/ErrorModal";
+import FormInput from "../components/FormInput";
+import FormDropdown from "../components/FormDropdown";
+import ErrorModal from "../components/modals/ErrorModal";
 import useErrorStore from "../zustand/stores/useErrorStore";
 import { ClipLoader } from "react-spinners";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -17,7 +18,7 @@ import titles from "../data/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import { cities } from "../data/algerianCities"; 
 import CoursesMultiSelect from "../components/coursesMultiselect";
-import { getCourses } from "../api/course"; // adjust path if needed
+import { getAllCourses } from "../api/course"; // adjust path if needed
 import useAuthStore from "../zustand/stores/authStore";
 
 
@@ -55,7 +56,7 @@ const [courses, setCourses] = useState([]);
 useEffect(() => {
     async function fetchCourses() {
       try {
-        const data = await getCourses();
+        const data = await getAllCourses();
 
         if (data.status === "success" && Array.isArray(data.data)) {
           // normalize API response
@@ -99,8 +100,8 @@ useEffect(() => {
     if (isLoggedIn) {
       if (role === "student") {
         navigate("/student_dashboard");
-      } else if (role === "ROLE_ADMIN") {
-        navigate("/dashboard");
+      } else if (role === "admin") {
+        navigate("/admin_dashboard");
       } else {
         navigate("/home");
       }
@@ -129,8 +130,8 @@ useEffect(() => {
 
     if (response.role === "student") {
       navigate("/student_dashboard");
-    } else if (response.role === "ROLE_ADMIN") {
-      navigate("/dashboard");
+    } else if (response.role === "admin") {
+      navigate("/admin_dashboard");
     } else {
       navigate("/home");
     }
@@ -203,215 +204,112 @@ useEffect(() => {
   <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Fields Wrapper */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ">
-        <div className="w-full">
-  <label className="block mb-2 text-sm font-medium text-mainDarkColor text-right">
-    الاسم واللقب
-  </label>
-  <div className="relative">
-    <input
-      type="text"
-      placeholder=" Amine Boumedian"
-      className={`w-full pr-10 pl-4 py-2 h-[53px] border rounded-lg focus:outline-none focus:ring-1 focus:ring-main ${
-        errors.fullName ? "border-main" : "border-border"
-      }`}
-      {...register("fullName", {
-        required: "هذا الحقل مطلوب",
-        minLength: {
-          value: 4,
-          message: "يجب أن يحتوي الاسم على 4 أحرف على الأقل",
-        },
-        maxLength: {
-          value: 15,
-          message: "يجب ألا يتجاوز الاسم 15 حرفًا",
-        },
-        pattern: {
-          value: /^[\p{L} ]+$/u, // ✅ accepts only letters (any language) + spaces
-          message: "الاسم يجب أن يحتوي على حروف ومسافات فقط",
-        },
-      })}
-    />
-    {/* Optional: you can change the icon to User instead of Phone */}
-    <User className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-  </div>
-
-  {errors.fullName && (
-    <p className="mt-1 text-sm text-main">{errors.fullName.message}</p>
-  )}
-</div>
+        <FormInput
+        id="fullName"
+        label="الاسم واللقب"
+        placeholder="Amine Boumedian"
+        register={register}
+        errors={errors}
+        Icon={User}
+        validationRules={{
+    required: "هذا الحقل مطلوب",
+    minLength: {
+      value: 4,
+      message: "يجب أن يحتوي الاسم على 4 أحرف على الأقل",
+    },
+    maxLength: {
+      value: 15,
+      message: "يجب ألا يتجاوز الاسم 15 حرفًا",
+    },
+    pattern: {
+      value: /^[\p{L} ]+$/u,
+      message: "الاسم يجب أن يحتوي على حروف ومسافات فقط",
+    },
+  }}
+      />
 
         {/* Phone Number Field */}
-        <div className="w-full">
-          <label className="block mb-2 text-sm font-medium text-mainDarkColor text-right">
-            رقم الهاتف
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="53 30 37 69 05"
-              className={`w-full pr-10 pl-4 py-2 h-[53px] border rounded-lg focus:outline-none focus:ring-1 focus:ring-main ${
-                errors.phone ? "border-main" : "border-border"
-              }`}
-              {...register("phone", {
-                required: "هذا الحقل مطلوب",
-                pattern: {
-                  value: /^(05|06|07)\d{8}$/,
-                  message:
-                    "رقم الهاتف غير صالح. يجب أن يبدأ بـ 05 أو 06 أو 07 ويتكون من 10 أرقام",
-                },
-              })}
-            />
-            <Phone className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-          </div>
-          {errors.phone && (
-            <p className="mt-1 text-sm text-main">{errors.phone.message}</p>
-          )}
-        </div>
+       <FormInput
+  id="phone"
+  label="رقم الهاتف"
+  placeholder="53 30 37 69 05"
+  register={register}
+  errors={errors}
+  Icon={Phone}
+  validationRules={{
+    required: "هذا الحقل مطلوب",
+    pattern: {
+      value: /^(05|06|07)\d{8}$/,
+      message: "رقم الهاتف غير صالح. يجب أن يبدأ بـ 05 أو 06 أو 07 ويتكون من 10 أرقام",
+    },
+  }}
+/>
 
       </div>
        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ">
        
 
         {/* Password Field */}
-        <div className="w-full">
-         <label className="block mb-2 text-sm font-medium text-mainDarkColor text-right">
-  كلمة السر{" "}
-  
-</label>
-
-          <div className="relative">
-            <input
-              type={passwordVisible ? "text" : "password"}
-              placeholder={intl.formatMessage({
-                id: "Login.form.password.placeholder",
-                defaultMessage: "كلمة السر",
-              })}
-              className={`w-full pr-12 pl-4 py-2 h-[53px] border rounded-lg focus:outline-none focus:ring-1 focus:ring-main rtl
-                ${errors.password ? "border-main" : "border-border"}`}
-              {...register("password", {
-                required: intl.formatMessage({
-                  id: "Login.form.password.required",
-                  defaultMessage: "هذا الحقل مطلوب",
-                }),
-                minLength: {
-                  value: 6,
-                  message: intl.formatMessage({
-                    id: "Login.form.password.minLength",
-                    defaultMessage: "كلمة السر يجب أن تحتوي على الأقل على 6 أحرف",
-                  }),
-                },
-              })}
-            />
-
-            {/* Lock Icon */}
-            <Lock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-
-            {/* Eye Toggle */}
-            <button
-              type="button"
-              onClick={() => setPasswordVisible(!passwordVisible)}
-              className={`absolute top-1/2 -translate-y-1/2 ${
-                isRTL ? "left-3" : "right-10"
-              } text-gray-500 flex items-center justify-center`}
-            >
-              {passwordVisible ? (
-                <Eye className="h-5 w-5 text-main" />
-              ) : (
-                <EyeOff className="h-5 w-5 text-[#9E9E9E]" />
-              )}
-            </button>
-          </div>
-          {errors.password && (
-            <p className="mt-1 text-sm text-main">{errors.password.message}</p>
-          )}
-        </div>
+    <FormInput
+  id="password"
+  label="كلمة السر"
+  placeholder="كلمة السر"
+  register={register}
+  errors={errors}
+  Icon={Lock}
+  showPasswordToggle={true}
+  passwordVisible={passwordVisible}
+  onPasswordToggle={() => setPasswordVisible(!passwordVisible)}
+  isRTL={isRTL}
+  validationRules={{
+    required: "هذا الحقل مطلوب",
+    minLength: {
+      value: 6,
+      message: "كلمة السر يجب أن تحتوي على الأقل على 6 أحرف",
+    },
+    pattern: {
+      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      message: "يجب أن تحتوي كلمة السر على حرف كبير وصغير ورقم",
+    },
+  }}
+/>
     {/* confrim password */}
-        <div className="w-full">
-  <label className="block mb-2 text-sm font-medium text-mainDarkColor text-right">
-    تأكيد كلمة السر
-  </label>
-
-  <div className="relative">
-    <input
-      type={confirmPasswordVisible ? "text" : "password"}
-      placeholder={intl.formatMessage({
-        id: "Register.form.confirmPassword.placeholder",
-        defaultMessage: "تأكيد كلمة السر",
-      })}
-      className={`w-full pr-12 pl-4 py-2 h-[53px] border rounded-lg focus:outline-none focus:ring-1 focus:ring-main rtl
-        ${errors.confirm_password ? "border-main" : "border-border"}`}
-      {...register("confirm_password", {
-        required: intl.formatMessage({
-          id: "Register.form.confirmPassword.required",
-          defaultMessage: "هذا الحقل مطلوب",
-        }),
-        validate: (value) =>
-          value === watch("password") ||
-          intl.formatMessage({
-            id: "Register.form.confirmPassword.mismatch",
-            defaultMessage: "كلمة السر غير متطابقة",
-          }),
-      })}
-    />
-
-    {/* Lock Icon */}
-    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-
-    {/* Eye Toggle */}
-    <button
-      type="button"
-      onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
-      className={`absolute top-1/2 -translate-y-1/2 ${
-        isRTL ? "left-3" : "right-10"
-      } text-gray-500 flex items-center justify-center`}
-    >
-      {confirmPasswordVisible ? (
-        <Eye className="h-5 w-5 text-main" />
-      ) : (
-        <EyeOff className="h-5 w-5 text-[#9E9E9E]" />
-      )}
-    </button>
-  </div>
-
-  {errors.confirm_password && (
-    <p className="mt-1 text-sm text-main">{errors.confirm_password.message}</p>
-  )}
-</div>
+      <FormInput
+  id="confirm_password"
+  label="تأكيد كلمة السر"
+  placeholder="تأكيد كلمة السر"
+  register={register}
+  errors={errors}
+  Icon={Lock}
+  showPasswordToggle={true}
+  passwordVisible={confirmPasswordVisible}
+  onPasswordToggle={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+  isRTL={isRTL}
+  validationRules={{
+    required: "هذا الحقل مطلوب",
+    validate: (value) =>
+      value === watch("password") || "كلمة السر غير متطابقة",
+  }}
+/>
 {/* city dropdown */}
-<div className="w-full">
-      <label className="block mb-2 text-sm font-medium text-mainDarkColor text-right">
-        الولاية
-      </label>
-
-      <div className="relative">
-        <select
-          className={`w-full pr-12 pl-4 py-2 h-[53px] border rounded-lg focus:outline-none focus:ring-1 focus:ring-main rtl appearance-none bg-white
-            ${errors.city ? "border-main" : "border-border"}`}
-          {...register("city", {
-            required: intl.formatMessage({
-              id: "Register.form.city.required",
-              defaultMessage: "هذا الحقل مطلوب",
-            }),
-          })}
-          defaultValue=""
-        >
-          <option value="" disabled>
-            اختر الولاية
-          </option>
-          {cities.map((city) => (
-            <option key={city.id} value={city.name}>
-              {city.ar_name}
-            </option>
-          ))}
-        </select>
-
-        {/* Dropdown icon */}
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none " />
-      </div>
-
-      {errors.city && (
-        <p className="mt-1 text-sm text-main">{errors.city.message}</p>
-      )}
-    </div>
+<FormDropdown
+  id="city"
+  label="الولاية"
+  placeholder="اختر الولاية"
+  register={register}
+  errors={errors}
+  options={cities.map((city) => ({
+    id: city.id,
+    value: city.name,      // This gets submitted (e.g., "Algiers")
+    label: city.ar_name,   // This is displayed (e.g., "الجزائر")
+  }))}
+  validationRules={{
+    required: intl.formatMessage({
+      id: "Register.form.city.required",
+      defaultMessage: "هذا الحقل مطلوب",
+    }),
+  }}
+/>
 {/* courses dropdown */}
 {loadingCourses ? (
         <p className="text-gray-500">جاري تحميل الدورات...</p>

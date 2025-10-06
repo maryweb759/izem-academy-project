@@ -5,10 +5,26 @@ import useAuthStore from "../../zustand/stores/authStore";
 
 const MobileMenu = ({ navItems, isActive, mobileOpen, setMobileOpen }) => {
   const navigate = useNavigate();
-  const { isLoggedIn, user } = useAuthStore();
+  const { isLoggedIn,role, user } = useAuthStore();
 
   if (!mobileOpen) return null; // don’t render if menu is closed
-
+const handleNavigation = () => {
+  const routes = {
+    student: "/student_dashboard",
+    admin: "/admin_dashboard",
+  };
+  
+  navigate(routes[role] || "/home");
+};
+const handleRoleBasedNavigation = () => {
+  const routes = {
+    student: "/student_dashboard",
+    admin: "/admin_dashboard",
+  };
+  
+  navigate(routes[role] || "/home");
+  setMobileOpen(false);
+};
   return (
 <div className="absolute top-full left-0 w-full bg-white shadow-md md:hidden flex flex-col p-4 gap-4" >
       {/* Nav Items */}
@@ -53,12 +69,9 @@ const MobileMenu = ({ navItems, isActive, mobileOpen, setMobileOpen }) => {
         </div>
       ) : (
         <div
-          className="flex items-center gap-3 cursor-pointer"
-          onClick={() => {
-            navigate("/student_dashboard");
-            setMobileOpen(false);
-          }}
-        >
+  className="flex items-center gap-3 cursor-pointer"
+  onClick={handleRoleBasedNavigation}
+>
           <User className="w-10 h-10 text-primary border border-primary rounded-full p-1" />
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-gray-900">

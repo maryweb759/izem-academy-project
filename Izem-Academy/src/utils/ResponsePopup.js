@@ -1,4 +1,4 @@
-import ErrorModal from "../components/ErrorModal"; // import your reusable error modal
+import ErrorModal from "../components/modals/ErrorModal"; // import your reusable error modal
 
 import { useState } from "react";
 

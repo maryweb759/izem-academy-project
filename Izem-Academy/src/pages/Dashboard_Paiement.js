@@ -12,8 +12,8 @@ import Pagination from "../components/Pagination";
 import { Search, Filter, Image, X, Check, Ban } from "lucide-react";
 import useErrorStore from "../zustand/stores/useErrorStore";
 import Modal from "react-modal";
-import SuccessModal from "../components/SuccessModal";
-import ErrorModal from "../components/ErrorModal";
+import SuccessModal from "../components/modals/SuccessModal";
+import ErrorModal from "../components/modals/ErrorModal";
 import { FormattedMessage, useIntl } from "react-intl";
 import useLanguageStore from "../zustand/stores/languageStore";
 

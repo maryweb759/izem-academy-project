@@ -12,7 +12,7 @@ import Contact from "./pages/Contact";
 import Landing from "./pages/Landing";
 import Footer from "./components/footer"; // ⬅️ import Footer
 import StudentDashboard from "./pages/studentDashboard";
-
+import AdminDashboard from "./pages/admin/adminDashboard";
 
 import ChangePassword from "./pages/ChangePassword";
 import TRC20Wallet from "./pages/TRC20Wallet";
@@ -69,7 +69,9 @@ function App() {
 
             {/* Routes protégées */}
             <Route element={<PrivateRoute />}>
-<Route path="/student_dashboard/*" element={<StudentDashboard />} />
+              <Route path="/student_dashboard/*" element={<StudentDashboard />} />
+              <Route path="/admin_dashboard/*" element={<AdminDashboard />} />
+              
               <Route path="/withdraw/:rtc_wallet" element={<Withdraw />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/change_password" element={<ChangePassword />} />

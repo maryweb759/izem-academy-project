@@ -3,6 +3,8 @@ const Recipe = require('../models/recipes.js');
 const Course = require("../models/Course");
 const { registerValidation } = require("../utils/validators.js");
 const { successResponse, errorResponse } = require("../utils/response");
+const { paginate, getPaginationMeta } = require('../utils/pagination');
+
 const CourseEnrollment = require("../models/courseEnrollementSchema.js");
 const mongoose = require('mongoose'); // if not already required
 
@@ -145,12 +147,33 @@ const updateValidate = async (req, res) => {
   }
 };
 
+
 const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().populate("courses");
+    const { page, limit, skip } = paginate(req.query.page, req.query.limit);
+    
+    const search = req.query.search || "";
+    const filter = search 
+      ? { 
+          $or: [
+            { name: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } }
+          ]
+        }
+      : {};
+
+    const totalUsers = await User.countDocuments(filter);
+    const users = await User.find(filter)
+      .populate("courses")
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
     res.status(200).json({
       status: "success",
       count: users.length,
+      totalUsers,
+      pagination: getPaginationMeta(page, limit, totalUsers),
       users
     });
   } catch (error) {

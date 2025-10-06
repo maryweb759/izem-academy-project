@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
-import SuccessModal from "../components/SuccessModal";
+import SuccessModal from "../components/modals/SuccessModal";
 import { renitialiserPassword, confrmRenitPassword } from "../api/auth";
-import ErrorModal from "../components/ErrorModal";
+import ErrorModal from "../components/modals/ErrorModal";
 import useErrorStore from "../zustand/stores/useErrorStore";
 import { useParams, useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";

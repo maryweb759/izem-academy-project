@@ -4,7 +4,7 @@ import image from "../assets/student-admin.png";
 import PurchasedCourses from "../components/PurchasedCourses";
 import useAuthStore from "../zustand/stores/authStore";
 import { Menu, X, Home, User, BookOpen, StickyNote, LogOut } from "lucide-react";
-import { getCourses } from "../api/course"; // adjust path if needed
+import { getAllCourses } from "../api/course"; // adjust path if needed
 import Profile from "../pages/student/profile"; // adjust path if needed
 
 
@@ -50,7 +50,7 @@ function Sidebar({ isOpen, setIsOpen }) {
 
         <div>
           <button
-            className="w-full bg-white text-primary rounded-lg py-2 hover:bg-gray-100 flex items-center justify-center gap-2"
+            className="w-full bg-white text-mainRed rounded-lg py-2 hover:bg-gray-100 flex items-center justify-center gap-2"
             onClick={handleLogout}
           >
             <LogOut size={18} /> تسجيل الخروج
@@ -108,7 +108,7 @@ useEffect(() => {
     async function fetchCourses() {
       try {
         setLoadingCourses(true);
-        const data = await getCourses();
+        const data = await getAllCourses();
 
         if (data.status === "success" && Array.isArray(data.data)) {
           // normalize API response
