@@ -4,6 +4,7 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import Pagination from "../../components/Pagination";
 import { Edit, Trash2, KeyRound, PlusCircle, X, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import useAuthStore from "../../zustand/stores/authStore"; // Assuming you use Zustand for auth
 
 // Assuming FormInput, SuccessModal, ErrorModal are available components
 // You might need to adjust the import paths based on your project structure
@@ -91,11 +92,11 @@ export default function Users() {
   const [pendingUserId, setPendingUserId] = useState(null);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
+  const token = useAuthStore((s) => s.token);
 
   const fetchUsers = useCallback(async (page) => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const data = await getAllUsers(token, page, 10, search);
       setUsers(data.users);
       setPagination(data.pagination);
@@ -136,7 +137,6 @@ export default function Users() {
   // ✅ Step 2: Confirm delete action
   const confirmDeleteUser = async () => {
     try {
-      const token = localStorage.getItem("token");
       await deleteUser(pendingUserId, token);
 
       setSuccessMessage("تم حذف المستخدم ودوراته بنجاح");
@@ -160,7 +160,6 @@ export default function Users() {
 
   const onSubmitUpdatePassword = async (data) => {
     try {
-      const token = localStorage.getItem('token');
       await updateUserPassword({ newPassword: data.newPassword },userToUpdatePassword, token);
       setSuccessMessage("Password updated successfully");
       setIsSuccessModalOpen(true);
