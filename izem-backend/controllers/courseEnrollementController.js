@@ -253,6 +253,47 @@ const getUserEnrollments = async (req, res) => {
   }
 };
 
+// Get only approved courses + check if user has pending enrollments
+const getApprovedCoursesWithPendingStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Fetch approved enrollments and populate courses with all fields needed
+    const approvedEnrollments = await CourseEnrollment.find({
+      user: userId,
+      status: "approved",
+    })
+      .populate("courses", "title code subtitle price __v") // ✅ added subtitle and __v
+      .sort({ requestedAt: -1 });
+
+    // Check if user has any pending enrollments
+    const hasPendingCourses = await CourseEnrollment.exists({
+      user: userId,
+      status: "pending",
+    });
+
+    // Extract approved courses from enrollments
+    const approvedCourses = approvedEnrollments.flatMap(
+      (enrollment) => enrollment.courses
+    );
+
+    return successResponse(
+      res,
+      200,
+      "Approved courses retrieved successfully",
+      {
+        approvedCourses,
+        hasPendingCourses: Boolean(hasPendingCourses),
+      }
+    );
+  } catch (error) {
+    return errorResponse(res, 500, "Error while fetching approved courses", {
+      error: error.message,
+    });
+  }
+};
+
+
 
 // 6. Get user's approved courses (replaces direct access to user.courses)
 const getUserApprovedCourses = async (req, res) => {
@@ -289,5 +330,6 @@ module.exports = {
   getPendingEnrollments,
   processEnrollment,
   getUserEnrollments,
-  getUserApprovedCourses
+  getUserApprovedCourses,
+  getApprovedCoursesWithPendingStatus
 };

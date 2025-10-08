@@ -28,7 +28,8 @@ const DataCard = ({ name, amount, icon, color, progressValue }) => {
       </div>
 
       <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
-        <span>{progressValue}%</span>
+        {/* <span>{progressValue}%</span> */}
+        <span></span>
       </div>
 
       {/* Progress bar */}

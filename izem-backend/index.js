@@ -14,6 +14,8 @@ const db = require('./config/db.js');
 const userRoutes = require('./routes/userRoutes.js');
 const courseRoutes = require("./routes/courseRoutes");
 const enrollementRoutes = require("./routes/courseEnrollementRoutes.js");
+const dashboardRoutes = require("./routes/dashboardRoutes.js");
+
 //crer une appli express 
 const app = express();
 
@@ -38,6 +40,7 @@ app.use('/api/users', userRoutes);
 app.use("/api/courses", courseRoutes);
 // routes pour les course enrollement 
 app.use("/api", enrollementRoutes);
+app.use("/api/admin", dashboardRoutes);
 // Middleware de gestion d'erreur
 app.use(errorHandler);
 

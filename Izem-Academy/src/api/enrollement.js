@@ -16,3 +16,9 @@ export const processEnrollment = async (data,enrollmentId, token) => {
   });
   return res.data;
 };
+export const getApprovedCoursesWithPendingStatus = async (token, userID) => {
+  const res = await api.get(`/user/${userID}/approved-courses`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};

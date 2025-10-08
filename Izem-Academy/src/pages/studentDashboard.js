@@ -1,17 +1,17 @@
-import { useState, useEffect  } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route, Link, useNavigate } from "react-router-dom";
 import image from "../assets/student-admin.png";
 import PurchasedCourses from "../components/PurchasedCourses";
 import useAuthStore from "../zustand/stores/authStore";
-import { Menu, X, Home, User, BookOpen, StickyNote, LogOut } from "lucide-react";
-import { getAllCourses } from "../api/course"; // adjust path if needed
-import Profile from "../pages/student/profile"; // adjust path if needed
-
+import { Menu, X, Home, User, StickyNote, LogOut } from "lucide-react";
+import { getAllCourses } from "../api/course";
+import { getApprovedCoursesWithPendingStatus } from "../api/enrollement";
+import Profile from "../pages/student/profile";
+import SuccessModal from "../components/modals/SuccessModal";
 
 const menuItems = [
   { to: "dashboard", label: "لوحة التحكم", icon: <Home size={18} /> },
   { to: "profile", label: "حسابي", icon: <User size={18} /> },
-  // { to: "courses", label: "دوراتي", icon: <BookOpen size={18} /> },
   { to: "notes", label: "ملاحظاتي", icon: <StickyNote size={18} /> },
 ];
 
@@ -26,7 +26,6 @@ function Sidebar({ isOpen, setIsOpen }) {
 
   return (
     <>
-      {/* Overlay (for mobile only) */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-40 z-20 md:hidden"
@@ -97,27 +96,28 @@ function Header({ user, toggleSidebar }) {
   );
 }
 
-const Placeholder = ({ children }) => <div className="p-6">{children}</div>;
-
 export default function StudentDashboard() {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const [isOpen, setIsOpen] = useState(true);
-const [allCourses, setAllCourses] = useState([]);
+  const [allCourses, setAllCourses] = useState([]);
+  const [approvedCourses, setApprovedCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
-useEffect(() => {
+
+  const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
+
+  // 🟢 Fetch all available courses
+  useEffect(() => {
     async function fetchCourses() {
       try {
         setLoadingCourses(true);
         const data = await getAllCourses();
-
         if (data.status === "success" && Array.isArray(data.data)) {
-          // normalize API response
           const normalizedCourses = data.data.map((c) => ({
-            id: c._id, // use API _id as id
+            id: c._id,
             title: c.title,
             price: c.price,
           }));
-           setAllCourses(normalizedCourses);
+          setAllCourses(normalizedCourses);
         }
       } catch (err) {
         console.error("Error fetching courses:", err);
@@ -125,12 +125,35 @@ useEffect(() => {
         setLoadingCourses(false);
       }
     }
-
     fetchCourses();
   }, []);
+
+  // 🟢 Fetch approved courses with pending status
+  useEffect(() => {
+    async function fetchApprovedCourses() {
+      try {
+        const data = await getApprovedCoursesWithPendingStatus(token, user._id);
+        if (data.status === "success") {
+          const approved = data.data.approvedCourses || [];
+          setApprovedCourses(approved);
+
+          if (data.data.hasPendingCourses) {
+            setIsPendingModalOpen(true);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching approved courses:", err);
+      }
+    }
+
+    if (token) {
+      fetchApprovedCourses();
+    }
+  }, [token]);
+
   const coursesElement = (
     <PurchasedCourses
-      courses={user?.courses || []}
+      courses={approvedCourses}
       allCourses={allCourses}
       loadingCourses={loadingCourses}
       userID={user?._id}
@@ -146,22 +169,29 @@ useEffect(() => {
         }`}
       >
         <Header user={user?.fullName} toggleSidebar={() => setIsOpen(!isOpen)} />
+
         <Routes>
           <Route index element={coursesElement} />
           <Route path="dashboard" element={coursesElement} />
-            <Route path="profile" element={<Profile />} />   {/* ✅ new profile screen */}
-          {/* <Route path="courses" element={<Placeholder>📚 دوراتي</Placeholder>} /> */}
-<Route
-  path="notes"
-  element={
-    <div className="flex flex-col items-center justify-center h-full text-gray-600">
-      <span className="text-5xl mb-4">📝</span>
-      <p className="text-lg font-medium">لا توجد ملاحظات متاحة حاليا</p>
-    </div>
-  }
-/>
+          <Route path="profile" element={<Profile />} />
+          <Route
+            path="notes"
+            element={
+              <div className="flex flex-col items-center justify-center h-full text-gray-600">
+                <span className="text-5xl mb-4">📝</span>
+                <p className="text-lg font-medium">لا توجد ملاحظات متاحة حاليا</p>
+              </div>
+            }
+          />
         </Routes>
       </div>
+
+      {/* 🔔 Pending courses popup */}
+      <SuccessModal
+        isOpen={isPendingModalOpen}
+        closeModal={() => setIsPendingModalOpen(false)}
+        message="هناك بعض الدورات قيد المراجعة، يرجى الانتظار حتى تتم الموافقة عليها وستُضاف تلقائياً إلى قائمتك."
+      />
     </div>
   );
 }

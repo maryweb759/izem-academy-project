@@ -38,6 +38,14 @@ export const savePurchasedCourses=async(data,token)=>{
 	})
     return res.data
   }
+    export  const  dashboardCards=async(token)=>{
+    const res = await api.get(`/admin/dashboard`, {
+		headers: {
+            Authorization: `Bearer `+token
+		},
+	})
+    return res.data
+  }
   // 
 export const getCurrentUser = async (token) => {
     try {

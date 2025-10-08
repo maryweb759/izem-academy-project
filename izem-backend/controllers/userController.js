@@ -23,94 +23,96 @@ const generateToken = (id) => {
 
 const registerUser = async (req, res) => {
   try {
-    // 📌 Validation avec Joi
+    // 📌 Validate request body with Joi
     const { error } = registerValidation(req.body);
     if (error) {
       return res.status(400).json({
         status: "error",
-        message: error.details[0].message
+        message: error.details[0].message,
       });
     }
 
-    const { fullName, phone, password, city, courses, role } = req.body;
+    const { fullName, phone, password, city, courses = [], role } = req.body;
 
-    // 📌 Vérification des champs obligatoires
+    // 📌 Check required fields
     if (!fullName || !phone || !password || !city) {
       return res.status(400).json({
         status: "error",
-        message: "Veuillez remplir tous les champs obligatoires"
+        message: "Veuillez remplir tous les champs obligatoires",
       });
     }
 
-    // 📌 Vérifier si l'utilisateur existe déjà
+    // 📌 Check if user already exists
     const userExists = await User.findOne({ phone });
     if (userExists) {
       return res.status(400).json({
         status: "error",
-        message: "Le numéro de téléphone existe déjà"
+        message: "Le numéro de téléphone existe déjà",
       });
     }
 
-    // 📌 Hacher le mot de passe
+    // 📌 Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 📌 Création de l’utilisateur (⚠️ ne pas inclure courses ici)
-    let user = await User.create({
+    // 📌 Create new user
+    const user = await User.create({
       fullName,
       phone,
       password: hashedPassword,
       city,
       role: role || "student",
-      isValidated: false
+      isValidated: false,
     });
 
-    // 📌 Validation des cours s’ils sont envoyés
+    // 📌 If there are courses, create a pending enrollment request
     if (Array.isArray(courses) && courses.length > 0) {
       const validCourses = await Course.find({ _id: { $in: courses } });
 
       if (validCourses.length !== courses.length) {
         return res.status(400).json({
           status: "error",
-          message: "Un ou plusieurs cours n'existent pas"
+          message: "Un ou plusieurs cours n'existent pas",
         });
       }
 
-      // 📌 Créer une demande d’inscription
       const enrollmentRequest = new CourseEnrollment({
         user: user._id,
-        courses: validCourses.map(c => c._id),
+        courses: validCourses.map((c) => c._id),
         totalAmount: validCourses.reduce((sum, c) => sum + c.price, 0),
-        status: "pending"
+        status: "pending",
       });
 
       await enrollmentRequest.save();
     }
 
-    // 📌 Générer un token JWT
+    // 📌 Generate token
     const token = generateToken(user._id);
 
+    // 📌 Final response (without courses)
     res.status(201).json({
       status: "success",
-      message: "Utilisateur créé. Demande d'inscription aux cours en attente de validation.",
+      message:
+        "Utilisateur créé avec succès. Demande d'inscription en attente si des cours ont été sélectionnés.",
       _id: user._id,
       fullName: user.fullName,
       phone: user.phone,
       city: user.city,
-      courses: [],
       role: user.role,
       token,
-      isValidated: user.isValidated
+      isValidated: user.isValidated,
     });
   } catch (error) {
     console.error("Erreur lors de l'inscription :", error);
     res.status(500).json({
       status: "error",
       message: "Erreur interne du serveur",
-      error: error.message
+      error: error.message,
     });
   }
 };
+
+
 
 
 
@@ -220,58 +222,59 @@ const deleteUser = async (req, res) => {
 
 // Authentifier un utilisateur
 const loginUser = async (req, res) => {
-    try {
-        const { phone, password } = req.body;
+  try {
+    const { phone, password } = req.body;
 
-        // Vérifier que le téléphone et le mot de passe sont fournis
-        if (!phone || !password) {
-            return res.status(400).json({
-                status: "error",
-                message: "Le numéro de téléphone et le mot de passe sont obligatoires"
-            });
-        }
-
-        // Vérifier si l'utilisateur existe + peupler les cours
-        const user = await User.findOne({ phone }).populate("courses");
-
-        if (!user) {
-            return res.status(400).json({
-                status: "error", 
-                message: 'لم يتم العثور على المستخدم' 
-            });
-        }
-
-        // Vérifier le mot de passe
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ 
-                status: "error",
-                message: 'كلمة المرور غير صحيحة' 
-            });
-        }
-
-        // Générer un token 
-        const token = generateToken(user._id);
-
-        return res.json({
-            status: "success",
-            _id: user._id,
-            fullName: user.fullName,
-            phone: user.phone,
-            city: user.city,
-            courses: user.courses, // 👉 ici tu auras les objets complets des cours
-            role: user.role,
-            token: token,
-            isValidated: user.isValidated
-        });
-    } catch (error) {
-        return res.status(500).json({ 
-            status: "error",
-            message: 'Erreur lors de la connexion',
-            error: error.message 
-        });
+    // Vérifier que le téléphone et le mot de passe sont fournis
+    if (!phone || !password) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le numéro de téléphone et le mot de passe sont obligatoires",
+      });
     }
+
+    // Vérifier si l'utilisateur existe (sans peupler les cours)
+    const user = await User.findOne({ phone });
+
+    if (!user) {
+      return res.status(400).json({
+        status: "error",
+        message: "لم يتم العثور على المستخدم",
+      });
+    }
+
+    // Vérifier le mot de passe
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({
+        status: "error",
+        message: "كلمة المرور غير صحيحة",
+      });
+    }
+
+    // Générer un token
+    const token = generateToken(user._id);
+
+    // ✅ Retourner uniquement les champs nécessaires (sans courses)
+    return res.json({
+      status: "success",
+      _id: user._id,
+      fullName: user.fullName,
+      phone: user.phone,
+      city: user.city,
+      role: user.role,
+      token,
+      isValidated: user.isValidated,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Erreur lors de la connexion",
+      error: error.message,
+    });
+  }
 };
+
 const addCourseToUser = async (req, res) => {
   try {
     const { userId, courseIds } = req.body;

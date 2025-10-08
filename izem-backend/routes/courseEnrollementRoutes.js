@@ -5,7 +5,8 @@ const {
   getPendingEnrollments,
   processEnrollment,
   getUserEnrollments,
-  getUserApprovedCourses
+  getUserApprovedCourses,
+  getApprovedCoursesWithPendingStatus
 } = require('../controllers/courseEnrollementController'); // adjust path as needed
 const { protect, admin } = require('../middleware/AuthentificationHandler.js');
 
@@ -40,6 +41,9 @@ router.post('/enrollment/request', requestCourseEnrollment);
 // Get user's enrollment history
 router.get('/enrollment/user/:userId/history', protect, getUserEnrollments);
 
+// getApprovedCoursesWithPendingStatus
+router.get("/user/:userId/approved-courses",protect,admin, getApprovedCoursesWithPendingStatus);
+
 // Get user's approved courses
 router.get('/users/:userId/courses', protect, getUserApprovedCourses);
 
@@ -49,6 +53,7 @@ router.get('/admin/enrollments/pending', protect,admin, getPendingEnrollments);
 
 // Process enrollment (approve/reject)
 router.patch('/admin/enrollment/:enrollmentId/process', protect,admin, processEnrollment);
+
 
 // Get all enrollments (with optional status filter)
 router.get('/admin/enrollments', requireAdmin, async (req, res) => {
