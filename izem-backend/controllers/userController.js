@@ -150,13 +150,13 @@ const updateValidate = async (req, res) => {
 };
 
 
+// GET /api/users?page=1&limit=10&search=
 const getAllUsers = async (req, res) => {
   try {
     const { page, limit, skip } = paginate(req.query.page, req.query.limit);
-
     const search = req.query.search || "";
 
-    // Base filter to exclude teacher and admin
+    // Base filter: only students
     const baseFilter = {
       role: { $nin: ["teacher", "admin"] },
     };
@@ -166,60 +166,103 @@ const getAllUsers = async (req, res) => {
       ? {
           ...baseFilter,
           $or: [
-            { name: { $regex: search, $options: "i" } },
-            { email: { $regex: search, $options: "i" } },
+            { fullName: { $regex: search, $options: "i" } },
+            { phone: { $regex: search, $options: "i" } },
+            { city: { $regex: search, $options: "i" } },
           ],
         }
       : baseFilter;
 
     const totalUsers = await User.countDocuments(filter);
 
+    // Fetch paginated users
     const users = await User.find(filter)
-      .populate("courses")
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 });
+      .sort({ createdOn: -1 })
+      .lean();
+
+    // Get user IDs
+    const userIds = users.map(u => u._id);
+
+    // ✅ Fetch ONLY approved enrollments for these users
+    const approvedEnrollments = await CourseEnrollment.find({
+      user: { $in: userIds },
+      status: "approved" // ✅ Filter only approved enrollments
+    })
+      .populate("courses") // Populate full course details to match old format
+      .lean();
+
+    // ✅ Create a map of userId to their approved courses
+    const userCoursesMap = {};
+    approvedEnrollments.forEach(enrollment => {
+      const userId = enrollment.user.toString();
+      if (!userCoursesMap[userId]) {
+        userCoursesMap[userId] = [];
+      }
+      // Add all courses from this enrollment
+      userCoursesMap[userId].push(...enrollment.courses);
+    });
+
+    // ✅ Attach courses to users in the SAME format as old API
+    const usersWithCourses = users.map(user => ({
+      ...user,
+      courses: userCoursesMap[user._id.toString()] || [] // Empty array if no approved courses
+    }));
 
     res.status(200).json({
       status: "success",
-      count: users.length,
+      count: usersWithCourses.length,
       totalUsers,
       pagination: getPaginationMeta(page, limit, totalUsers),
-      users,
+      users: usersWithCourses, // Same structure as old API
     });
   } catch (error) {
     console.error("Erreur lors de la récupération des utilisateurs :", error);
-    res
-      .status(500)
-      .json({ status: "error", message: "Erreur interne du serveur" });
+    res.status(500).json({ 
+      status: "error", 
+      message: "Erreur interne du serveur" 
+    });
   }
 };
+
 
 const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Check if user exists
     const user = await User.findById(id);
     if (!user) {
-      return res.status(404).json({ status: "error", message: "Utilisateur introuvable" });
+      return res.status(404).json({
+        status: "error",
+        message: "Utilisateur introuvable",
+      });
     }
 
-    // Delete courses owned by this user
-    await Course.deleteMany({ _id: { $in: user.courses } });
+    // ✅ Delete all enrollments linked to this user (any status)
+    await CourseEnrollment.deleteMany({ user: id });
 
-    // Delete user
+    // ✅ If this user is a teacher and owns courses, delete those courses too
+    // (optional — only needed if teachers can own courses)
+    await Course.deleteMany({ teacher: id });
+
+    // ✅ Finally, delete the user
     await User.findByIdAndDelete(id);
 
-    res.status(200).json({
+    return res.status(200).json({
       status: "success",
-      message: "Utilisateur et ses cours supprimés avec succès"
+      message: "Utilisateur et toutes ses inscriptions supprimés avec succès",
     });
   } catch (error) {
     console.error("Erreur lors de la suppression de l'utilisateur :", error);
-    res.status(500).json({ status: "error", message: "Erreur interne du serveur" });
+    return res.status(500).json({
+      status: "error",
+      message: "Erreur interne du serveur",
+      error: error.message,
+    });
   }
 };
-
 // Authentifier un utilisateur
 const loginUser = async (req, res) => {
   try {

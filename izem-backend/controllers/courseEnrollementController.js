@@ -9,17 +9,17 @@ const requestCourseEnrollment = async (req, res) => {
   try {
     const { userId, courseIds } = req.body;
 
-    // Basic validation
+    // 🔹 Basic validation
     if (!userId || !Array.isArray(courseIds) || courseIds.length === 0) {
       return errorResponse(res, 400, "userId et courseIds (array) sont obligatoires");
     }
 
-    // Validate userId format
+    // 🔹 Validate userId format
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return errorResponse(res, 400, "userId invalide");
     }
 
-    // Validate courseIds
+    // 🔹 Validate courseIds format
     const invalidCourseEntries = courseIds
       .map((id, idx) => ({ id, idx }))
       .filter(item => !item.id || typeof item.id !== "string" || !mongoose.Types.ObjectId.isValid(item.id));
@@ -37,46 +37,53 @@ const requestCourseEnrollment = async (req, res) => {
       );
     }
 
-    // Find user
+    // 🔹 Find user
     const user = await User.findById(userId);
     if (!user) {
       return errorResponse(res, 404, "Utilisateur non trouvé");
     }
 
-    // Dedupe courseIds
+    // 🔹 Dedupe courseIds
     const uniqueCourseIds = [...new Set(courseIds)];
 
-    // Find courses and calculate total amount
+    // 🔹 Find existing courses
     const courses = await Course.find({ _id: { $in: uniqueCourseIds } });
-    
     if (courses.length !== uniqueCourseIds.length) {
       return errorResponse(res, 404, "Un ou plusieurs cours n'existent pas");
     }
 
-    // Separate already enrolled courses from new courses
-    const existingUserCourseIds = new Set(user.courses.map(c => c.toString()));
-    
+    // 🔹 Find already approved enrollments for this user
+    const approvedEnrollments = await CourseEnrollment.find({
+      user: userId,
+      status: "approved"
+    }).select("courses");
+
+    const alreadyApprovedCourseIds = new Set(
+      approvedEnrollments.flatMap(e => e.courses.map(c => c.toString()))
+    );
+
+    // 🔹 Separate new vs already enrolled
     const skippedCourses = [];
     const newCoursesToRequest = [];
 
     courses.forEach(course => {
-      if (existingUserCourseIds.has(course._id.toString())) {
+      if (alreadyApprovedCourseIds.has(course._id.toString())) {
         skippedCourses.push(course.title);
       } else {
         newCoursesToRequest.push(course);
       }
     });
 
-    // If no new courses to request
+    // 🔹 If no new courses to request
     if (newCoursesToRequest.length === 0) {
       return res.status(400).json({
         status: "error",
-        message: "Tous les cours demandés sont déjà dans votre liste",
+        message: "Tous les cours demandés sont déjà approuvés",
         skippedCourses: skippedCourses
       });
     }
 
-    // Check for pending requests for the new courses only
+    // 🔹 Check if there's already a pending request for any of these new courses
     const newCourseIds = newCoursesToRequest.map(c => c._id.toString());
     const existingPendingRequest = await CourseEnrollment.findOne({
       user: userId,
@@ -88,34 +95,33 @@ const requestCourseEnrollment = async (req, res) => {
       return errorResponse(res, 400, "Une demande d'inscription est déjà en attente pour certains de ces cours");
     }
 
-    // Calculate total amount for new courses only
+    // 🔹 Calculate total amount for new courses
     const totalAmount = newCoursesToRequest.reduce((sum, course) => sum + course.price, 0);
 
-    // Create enrollment request for new courses only
+    // 🔹 Create a new enrollment request
     const enrollmentRequest = new CourseEnrollment({
       user: userId,
       courses: newCourseIds.map(id => new mongoose.Types.ObjectId(id)),
-      totalAmount: totalAmount
+      totalAmount: totalAmount,
+      status: "pending"
     });
 
     await enrollmentRequest.save();
 
-    // Always return this format with both arrays (even if empty)
+    // 🔹 Final response
     return res.status(201).json({
       status: "success",
-      message: "Demande soumise pour les nouveaux cours. Certains cours sont déjà dans votre liste.",
+      message: "Demande soumise pour les nouveaux cours. Certains cours sont déjà approuvés.",
       requestedCourses: newCoursesToRequest.map(c => c.title),
       totalAmount: totalAmount,
       skippedCourses: skippedCourses
     });
 
   } catch (error) {
-        console.error("Error in requestCourseEnrollment:", error); // Add logging for debugging
-
-     return errorResponse(res, 500, "Erreur lors de la soumission de la demande", {
+    console.error("Error in requestCourseEnrollment:", error);
+    return errorResponse(res, 500, "Erreur lors de la soumission de la demande", {
       error: error.message
     });
-   
   }
 };
 
@@ -158,7 +164,7 @@ const processEnrollment = async (req, res) => {
   try {
     const { enrollmentId } = req.params;
     const { action, rejectionReason } = req.body; // action: "approve" or "reject"
-    const adminId = req.user.id; // Assuming you have admin auth middleware
+    const adminId = req.user.id; // Assuming admin auth middleware adds user info
 
     // Validate input
     if (!["approve", "reject"].includes(action)) {
@@ -171,7 +177,7 @@ const processEnrollment = async (req, res) => {
 
     // Find enrollment request
     const enrollment = await CourseEnrollment.findById(enrollmentId)
-      .populate("user", "fullName courses")
+      .populate("user", "fullName")
       .populate("courses", "title code");
 
     if (!enrollment) {
@@ -183,47 +189,45 @@ const processEnrollment = async (req, res) => {
     }
 
     if (action === "approve") {
-      // Add courses to user's courses array
-      const user = await User.findById(enrollment.user._id);
-      const existingCourseIds = new Set(user.courses.map(c => c.toString()));
-      
-      const newCourseIds = enrollment.courses
-        .filter(course => !existingCourseIds.has(course._id.toString()))
-        .map(course => course._id);
-
-      if (newCourseIds.length > 0) {
-        user.courses.push(...newCourseIds);
-        await user.save();
-      }
-
-      // Update enrollment status
+      // ✅ No more modification on User model (courses removed)
+      // Just mark the enrollment as approved
       enrollment.status = "approved";
       enrollment.processedAt = new Date();
       enrollment.processedBy = adminId;
       await enrollment.save();
 
       return successResponse(res, 200, "Inscription approuvée avec succès", {
-        approvedCourses: enrollment.courses.map(c => c.title)
+        user: enrollment.user.fullName,
+        approvedCourses: enrollment.courses.map(c => ({
+          title: c.title,
+          code: c.code
+        })),
+        status: enrollment.status,
       });
 
-    } else { // reject
+    } else {
+      // Reject flow
       enrollment.status = "rejected";
+      enrollment.rejectionReason = rejectionReason;
       enrollment.processedAt = new Date();
       enrollment.processedBy = adminId;
-      enrollment.rejectionReason = rejectionReason;
       await enrollment.save();
 
       return successResponse(res, 200, "Inscription rejetée", {
-        rejectionReason
+        user: enrollment.user.fullName,
+        rejectionReason,
+        status: enrollment.status,
       });
     }
 
   } catch (error) {
+    console.error("Error in processEnrollment:", error);
     return errorResponse(res, 500, "Erreur lors du traitement de la demande", {
-      error: error.message
+      error: error.message,
     });
   }
 };
+
 
 
 // 5. Get user's enrollment history (for user dashboard)
@@ -295,30 +299,34 @@ const getApprovedCoursesWithPendingStatus = async (req, res) => {
 
 
 
-// 6. Get user's approved courses (replaces direct access to user.courses)
-const getUserApprovedCourses = async (req, res) => {
+// 6. Get user's courses by enrollment status
+const getUserCourses = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId, status } = req.params;
 
-    const user = await User.findById(userId).populate(
-      "courses",
-      "title code price subtitle"
-    );
+    // Fetch all enrollments for this user with the given status
+    const enrollments = await CourseEnrollment.find({
+      user: userId,
+      status: status,
+    }).populate("courses", "title code price subtitle");
 
-    if (!user) {
-      return errorResponse(res, 404, "Utilisateur non trouvé");
+    if (!enrollments || enrollments.length === 0) {
+      return errorResponse(res, 404, "Aucun cours trouvé pour cet utilisateur");
     }
+
+    // Flatten all courses from all matching enrollments
+    const courses = enrollments.flatMap((enrollment) => enrollment.courses);
 
     return successResponse(
       res,
       200,
-      "Cours approuvés récupérés avec succès",
-      { data: user.courses }
+      "Cours récupérés avec succès",
+      { data: courses }
     );
 
   } catch (error) {
     return errorResponse(res, 500, "Erreur lors de la récupération des cours", {
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -330,6 +338,6 @@ module.exports = {
   getPendingEnrollments,
   processEnrollment,
   getUserEnrollments,
-  getUserApprovedCourses,
+  getUserCourses,
   getApprovedCoursesWithPendingStatus
 };

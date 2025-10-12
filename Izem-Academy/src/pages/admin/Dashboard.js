@@ -20,7 +20,7 @@ export default function Dashboard() {
           const { 
             totalIncome, 
             totalStudents, 
-            totalEnrollmentRequests, 
+            enrolledStudents, 
             totalCourses,
             enrollmentBreakdown 
           } = apiResponse.data;
@@ -36,10 +36,10 @@ export default function Dashboard() {
             },
             {
               name: " الطلاب المسجلين ",
-              amount: totalStudents,
+              amount: enrolledStudents,
               icon: "users-icon",
               color: "#FD6C75",
-              progressValue: 100,
+              progressValue: totalStudents,
             },
             {
               name: "التسجيلات المؤكدة ",

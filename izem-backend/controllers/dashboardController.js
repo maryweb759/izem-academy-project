@@ -1,75 +1,79 @@
-const User = require("../models/Course.js");
+const User = require("../models/user.js");
 const CourseEnrollment = require("../models/courseEnrollementSchema.js");
 const Course = require("../models/Course");
 
 
 exports.getDashboardData = async (req, res) => {
   try {
-    // Get all metrics in parallel for better performance
+    // Run all main metrics in parallel
     const [
       totalCourses,
       totalEnrollmentRequests,
-      studentsCount,
-      totalIncome
+      totalStudents,
+      enrolledStudentsAgg,
+      totalIncomeAgg,
+      pendingRequests,
+      approvedRequests,
+      rejectedRequests,
     ] = await Promise.all([
-      // 1. Total Courses
+      // 1. Total number of courses
       Course.countDocuments(),
 
-      // 2. Total Enrollment Requests (all statuses)
+      // 2. Total number of enrollment requests (all statuses)
       CourseEnrollment.countDocuments(),
 
-      // 3. Total Users (excluding admin and teacher roles)
-      User.countDocuments({
-        role: { $nin: ["admin", "teacher"] }
-      }),
+      // 3. ✅ Total number of students
+      User.countDocuments({ role: "student" }),
 
-      // 4. Total Income (sum of approved enrollment amounts)
+      // 4. ✅ Distinct students with approved enrollments
+      CourseEnrollment.distinct("user", { status: "approved" }),
+
+      // 5. ✅ Total income from approved enrollments
       CourseEnrollment.aggregate([
-        {
-          $match: { status: "approved" }
-        },
+        { $match: { status: "approved" } },
         {
           $group: {
             _id: null,
-            total: { $sum: "$totalAmount" }
-          }
-        }
-      ])
+            total: { $sum: "$totalAmount" },
+          },
+        },
+      ]),
+
+      // 6. Breakdown counts by status
+      CourseEnrollment.countDocuments({ status: "pending" }),
+      CourseEnrollment.countDocuments({ status: "approved" }),
+      CourseEnrollment.countDocuments({ status: "rejected" }),
     ]);
 
-    // Extract total income from aggregation result
-    const income = totalIncome.length > 0 ? totalIncome[0].total : 0;
+    // ✅ Fixes
+    const totalIncome =
+      totalIncomeAgg.length > 0 ? totalIncomeAgg[0].total : 0;
 
-    // Additional useful metrics (optional)
-    const [pendingRequests, approvedRequests, rejectedRequests] = 
-      await Promise.all([
-        CourseEnrollment.countDocuments({ status: "pending" }),
-        CourseEnrollment.countDocuments({ status: "approved" }),
-        CourseEnrollment.countDocuments({ status: "rejected" })
-      ]);
+    // ✅ Enrolled students = number of unique users with approved enrollments
+    const enrolledStudents = enrolledStudentsAgg.length;
 
+    // ✅ Return final data
     return res.status(200).json({
       success: true,
       data: {
         totalCourses,
         totalEnrollmentRequests,
-        totalStudents: studentsCount,
-        totalIncome: income,
-        // Breakdown of enrollment requests
+        totalStudents,
+        enrolledStudents,
+        totalIncome,
         enrollmentBreakdown: {
           pending: pendingRequests,
           approved: approvedRequests,
-          rejected: rejectedRequests
-        }
-      }
+          rejected: rejectedRequests,
+        },
+      },
     });
-
   } catch (error) {
     console.error("Dashboard API Error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch dashboard data",
-      error: error.message
+      error: error.message,
     });
   }
 };

@@ -6,6 +6,7 @@ import useAuthStore from "../../zustand/stores/authStore"; // if you store token
 import LoadingSpinner from "../LoadingSpinner";
 import CopyButton from "../../components/copyComponent";
 import SuccessModal from "../modals/SuccessModal";
+import ErrorModal from "../modals/ErrorModal";
 import ConfirmationModal from "../modals/confirmationModal";
 
 // STYLED DETAILS MODAL
@@ -206,18 +207,25 @@ export default function EnrollmentRequestsTable() {
   const [pendingAction, setPendingAction] = useState(null);
   const [pendingId, setPendingId] = useState(null);
   const [reason, setReason] = useState("");
-  //
+    const [error, setError] = useState(null);
+  const [isErrorModalOpen, setErrorModalOpen] = useState(false);
+  const closeErrorModal = () => setErrorModalOpen(false);
+
     const itemsPerPage = 5;
   const token = useAuthStore((s) => s.token); // or wherever you store the token
 
  const fetchRequests = useCallback(async () => {
   setLoading(true);
+  setError(null);
   try {
     const res = await getAllEnrollement(token, currentPage + 1, itemsPerPage);
     setRequests(res.data.data || []);
     setTotalPages(res.data.pagination.totalPages);
   } catch (err) {
     console.error("Error fetching requests:", err);
+     setError(err.message);
+      console.error("Error updating enrollment:", err);
+         setErrorModalOpen(true);
   } finally {
     setLoading(false);
   }
@@ -235,6 +243,7 @@ useEffect(() => {
   };
 
   const confirmAction = async () => {
+    setError(null);
     try {
       const body = { action: pendingAction };
       if (pendingAction === "reject") {
@@ -252,7 +261,10 @@ useEffect(() => {
       // refresh
       fetchRequests();
     } catch (err) {
+      setError(err.message);
       console.error("Error updating enrollment:", err);
+         setErrorModalOpen(true);
+      
     } finally {
       setIsConfirmModalOpen(false);
       setReason("");
@@ -428,6 +440,12 @@ useEffect(() => {
           onClose={() => setSelectedRequest(null)}
         />
       )}
+      {/* error dialog */}
+       <ErrorModal
+        isOpen={isErrorModalOpen}
+        closeModal={closeErrorModal}
+        message={error}
+      />
     </div>
   );
 }
