@@ -39,7 +39,7 @@ export default function Dashboard() {
               amount: enrolledStudents,
               icon: "users-icon",
               color: "#FD6C75",
-              progressValue: totalStudents,
+              progressValue: 100, //totalStudents,
             },
             {
               name: "التسجيلات المؤكدة ",
