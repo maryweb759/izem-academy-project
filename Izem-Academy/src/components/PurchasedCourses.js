@@ -18,7 +18,6 @@ const PurchasedCourses = ({ courses, allCourses, loadingCourses, userID }) => {
   const circleColors = ["bg-brandYellow", "bg-mainRed", "bg-primary"];
   const onSubmit = async (data) => {
     try {
-      console.log('ids...........', data.courses);
       const payload = {
         userId: userID,
         courseIds: data.courses, // extract IDs only

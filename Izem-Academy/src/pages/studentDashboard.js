@@ -87,7 +87,7 @@ function Header({ user, toggleSidebar }) {
         <div>
           <p className="text-sm">{today}</p>
           <h1 className="text-xl font-semibold">
-            مرحباً بك مرة أخرى، {user || "مستخدم"}!
+            مرحباً بك مرة أخرى، !{user || "مستخدم"}
           </h1>
         </div>
       </div>
@@ -102,8 +102,9 @@ export default function StudentDashboard() {
   const [allCourses, setAllCourses] = useState([]);
   const [approvedCourses, setApprovedCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
 
-  const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
+  // const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
 
   // 🟢 Fetch all available courses
   useEffect(() => {
@@ -137,8 +138,16 @@ export default function StudentDashboard() {
           const approved = data.data.approvedCourses || [];
           setApprovedCourses(approved);
 
-          if (data.data.hasPendingCourses) {
-            setIsPendingModalOpen(true);
+         if (data.data.hasPendingCourses) {
+            setShowNotification(true);
+
+            // Automatically close after 1 minute (60,000 ms)
+            const timer = setTimeout(() => {
+              setShowNotification(false);
+            }, 60000);
+
+            // cleanup on unmount
+            return () => clearTimeout(timer);
           }
         }
       } catch (err) {
@@ -169,7 +178,20 @@ export default function StudentDashboard() {
         }`}
       >
         <Header user={user?.fullName} toggleSidebar={() => setIsOpen(!isOpen)} />
-
+{showNotification && (
+        <div className="w-full bg-brandBg/30 border border-yellow-300 text-yellow-800 px-4 py-3 rounded-lg flex justify-between items-start gap-3 shadow-sm">
+          <p className="text-sm sm:text-base leading-relaxed">
+           جاري مراجعة طلبك 💛 سيتم تحديث قائمتك تلقائيًا بعد الموافقة. شكرًا لتفهمك! 🥰
+          </p>
+          <button
+            onClick={() => setShowNotification(false)}
+            className="text-yellow-800 hover:text-yellow-600 transition-colors"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
         <Routes>
           <Route index element={coursesElement} />
           <Route path="dashboard" element={coursesElement} />
@@ -187,11 +209,11 @@ export default function StudentDashboard() {
       </div>
 
       {/* 🔔 Pending courses popup */}
-      <SuccessModal
+      {/* <SuccessModal
         isOpen={isPendingModalOpen}
         closeModal={() => setIsPendingModalOpen(false)}
         message="هناك بعض الدورات قيد المراجعة، يرجى الانتظار حتى تتم الموافقة عليها وستُضاف تلقائياً إلى قائمتك."
-      />
+      /> */}
     </div>
   );
 }

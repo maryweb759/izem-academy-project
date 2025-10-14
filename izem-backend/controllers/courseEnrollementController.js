@@ -92,7 +92,7 @@ const requestCourseEnrollment = async (req, res) => {
     });
 
     if (existingPendingRequest) {
-      return errorResponse(res, 400, "Une demande d'inscription est déjà en attente pour certains de ces cours");
+      return errorResponse(res, 400, "يبدو أن لديك طلب تسجيل جاري لبعض هذه الدورات 😊");
     }
 
     // 🔹 Calculate total amount for new courses

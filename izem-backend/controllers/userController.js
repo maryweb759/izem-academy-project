@@ -47,7 +47,7 @@ const registerUser = async (req, res) => {
     if (userExists) {
       return res.status(400).json({
         status: "error",
-        message: "Le numéro de téléphone existe déjà",
+        message: "رقم الهاتف موجود من قبل، من فضلك ادخل رقم مختلف",
       });
     }
 
@@ -72,7 +72,7 @@ const registerUser = async (req, res) => {
       if (validCourses.length !== courses.length) {
         return res.status(400).json({
           status: "error",
-          message: "Un ou plusieurs cours n'existent pas",
+          message: "دورة واحدة أو أكثر غير موجودة",
         });
       }
 

@@ -1,5 +1,5 @@
 import ErrorModal from "../components/modals/ErrorModal"; // import your reusable error modal
-
+    import { CheckCircle } from "lucide-react";
 import { useState } from "react";
 
 export default function ResponsePopup({ response, onClose }) {
@@ -31,27 +31,39 @@ export default function ResponsePopup({ response, onClose }) {
           ✕
         </button>
          {/* New Courses */}
-        {requestedCourses?.length > 0 && (
-          <>
-            {/* <h2 className="text-lg font-bold m-4 p-2 bg-green-100">
-              تمت إضافة الدورة بنجاح ✅
-            </h2> */}
-           <h2 className="text-lg font-bold m-4 p-2 bg-green-100">
-  تم تقديم الطلب بنجاح، يرجى دفع{' '}
-  <span className="font-extrabold text-xl ">
-    {totalAmount} دج
-  </span>{' '}
-  وإرسال الإيصال إلى المشرف، وسيتم الموافقة عليه خلال 12 ساعة
-</h2>
+
+{requestedCourses?.length > 0 && (
+  <div className="m-4 p-4 bg-green-50 border border-green-200 rounded-lg shadow-sm">
+    {/* Header with Icon + Title */}
+    <div className="flex items-center gap-3 mb-3">
+      <div className="bg-green-100 text-green-600 rounded-full p-2 flex items-center justify-center">
+        <CheckCircle size={22} strokeWidth={2.5} />
+      </div>
+      <h2 className="text-lg font-bold text-green-800">
+        أخبار رائعة! 🎉 تم تقديم طلبك بنجاح
+      </h2>
+    </div>
+
+    {/* Description */}
+    <p className="text-green-700 leading-relaxed">
+      يرجى دفع المبلغ المستحق وقدره{" "}
+      <span className="font-extrabold text-xl text-green-900">
+        {totalAmount} دج
+      </span>{" "}
+      ثم إرسال الإيصال إلى المشرف. سيتم مراجعة الطلب والموافقة عليه خلال{" "}
+      <span className="font-semibold text-green-800">12 ساعة</span>.
+    </p>
+
+    {/* Course list */}
+    <ul className="list-disc list-inside mt-3 text-secondDarkColor">
+      {requestedCourses.map((c, i) => (
+        <li key={i}>{c}</li>
+      ))}
+    </ul>
+  </div>
+)}
 
 
-            <ul className="list-disc list-inside text-secondDarkColor">
-              {requestedCourses.map((c, i) => (
-                <li key={i}>{c}</li>
-              ))}
-            </ul>
-          </>
-        )}
 
         {/* Skipped Courses */}
         {skippedCourses?.length > 0 && (

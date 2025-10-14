@@ -20,6 +20,7 @@ import { cities } from "../data/algerianCities";
 import CoursesMultiSelect from "../components/coursesMultiselect";
 import { getAllCourses } from "../api/course"; // adjust path if needed
 import useAuthStore from "../zustand/stores/authStore";
+import RegisterPopup from "../components/modals/registerpopup"; // adjust the path
 
 
 const Register = () => {
@@ -43,6 +44,8 @@ const Register = () => {
   const errorMessage = useErrorStore((state) => state.errorMessage);
   const [loading, setLoading] = useState(false);
     const authenticate = useAuthStore((state) => state.authenticate);
+const [isRegisterPopupOpen, setIsRegisterPopupOpen] = useState(false);
+const [isRegistering, setIsRegistering] = useState(false);
 
   const navigate = useNavigate();
   const intl = useIntl();
@@ -96,57 +99,48 @@ useEffect(() => {
   const handleToggleChange = (value) => {
     setSelectedValue(value);
   };
-   useEffect(() => {
-    if (isLoggedIn) {
-      if (role === "student") {
-        navigate("/student_dashboard");
-      } else if (role === "admin") {
-        navigate("/admin_dashboard");
-      } else {
-        navigate("/home");
-      }
-    }
-  }, [isLoggedIn, role, navigate]);
-
- const onSubmit = async (data) => {
-  const selectedObjects = courses.filter((c) =>
-    data.courses.includes(String(c.id))
-  );
-  console.log("ids:", data.courses, "objects:", selectedObjects);
-
-  setLoading(true);
-
-  try {
-    // remove confirm_password before sending
-    delete data.confirm_password;
-
-    const response = await signUp(data);
-     authenticate(response);
-    // ✅ handle success
-    // reset();
-
-    // check role safely
-    console.log("User role from API:", response.role);
-
-    if (response.role === "student") {
+ useEffect(() => {
+  if (!isRegistering && isLoggedIn) {
+    if (role === "student") {
       navigate("/student_dashboard");
-    } else if (response.role === "admin") {
+    } else if (role === "admin") {
       navigate("/admin_dashboard");
     } else {
       navigate("/home");
     }
+  }
+}, [isLoggedIn, role, navigate, isRegistering]);
+
+const onSubmit = async (data) => {
+  setIsRegistering(true);
+  setLoading(true);
+  try {
+    delete data.confirm_password;
+    const response = await signUp(data);
+    authenticate(response);
+    setIsRegisterPopupOpen(true);
+
+    setTimeout(() => {
+      setIsRegistering(false);
+      if (response.role === "student") {
+        navigate("/student_dashboard");
+      } else if (response.role === "admin") {
+        navigate("/admin_dashboard");
+      } else {
+        navigate("/home");
+      }
+    }, 5500);
   } catch (error) {
-   console.error("Erreur de connexion :", error.response.data);
-      if (error.response && error.response.data.message) {
-      setLocalErrorMessage(error.response.data.message);
-    } else {
-      setLocalErrorMessage(error.message || errorMessage);
-    }
+    console.error("Erreur de connexion :", error.response?.data);
+    setLocalErrorMessage(
+      error.response?.data?.message || error.message || errorMessage
+    );
     setErrorModalOpen(true);
   } finally {
     setLoading(false);
   }
 };
+
 
 
   return (
@@ -355,6 +349,15 @@ useEffect(() => {
         closeModal={() => setErrorModalOpen(false)}
         message={localErrorMessage}
       />
+      <RegisterPopup
+  isOpen={isRegisterPopupOpen}
+  closeModal={() => {
+    setIsRegisterPopupOpen(false);
+    // Optionally navigate after closing
+    navigate("/student_dashboard");
+  }}
+/>
+
 </div>
   );
 };
