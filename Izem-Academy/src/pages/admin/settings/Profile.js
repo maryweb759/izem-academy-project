@@ -5,7 +5,7 @@ export default function Profile() {
   const { user, role } = useAuthStore(); // 👈 we get user data from your auth store
 
   return (
-    <div className="w-full bg-customBlue shadow-lg px-6 py-6 rounded-lg">
+    <div className="w-full bg-white shadow-lg px-6 py-6 rounded-lg">
       <div className="container mx-auto text-center">
         {/* Title */}
         <h1 className="text-2xl lg:text-4xl xl:text-5xl font-bold font-inter text-mainDarkColor mb-4 leading-tight">

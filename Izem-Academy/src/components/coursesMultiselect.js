@@ -2,15 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { Controller } from "react-hook-form";
 import { ChevronDown, Check } from "lucide-react";
 
-/**
- * Props:
- * - control: react-hook-form control (optional if you want standalone usage)
- * - name: field name in the form (default "courses")
- * - courses: array of { id, title, price }
- * - intl: for messages (optional) -- used for required message if provided
- * - errors: form errors object (optional)
- * - isRTL: boolean (default true)
- */
 export default function CoursesMultiSelect({
   control,
   name = "courses",
@@ -18,6 +9,8 @@ export default function CoursesMultiSelect({
   intl,
   errors = {},
   isRTL = true,
+  validateExternally = false, // 👈 new
+  customValidation = null, // 👈 new
 }) {
   const wrapperRef = useRef(null);
   const [open, setOpen] = useState(false);
@@ -62,16 +55,25 @@ export default function CoursesMultiSelect({
         control={control}
         name={name}
         defaultValue={[]}
-        rules={{
-          validate: (val) =>
+        rules={
+  validateExternally
+    ? {}
+    : {
+        validate: (val) => {
+          if (customValidation) return customValidation(val);
+          return (
             (Array.isArray(val) && val.length > 0) ||
             (intl
               ? intl.formatMessage({
                   id: "Register.form.courses.required",
                   defaultMessage: "هذا الحقل مطلوب",
                 })
-              : "هذا الحقل مطلوب"),
-        }}
+              : "هذا الحقل مطلوب")
+          );
+        },
+      }
+}
+
         render={({ field: { value = [], onChange } }) => (
           <div className="w-full">
             <label className="block mb-2 text-sm font-medium text-mainDarkColor text-right">

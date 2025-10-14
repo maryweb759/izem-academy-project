@@ -314,6 +314,8 @@ const onSubmit = async (data) => {
           courses={courses}
           intl={intl}
           errors={errors}
+          validateExternally={true}
+          customValidation={null}
         />
       )}
       </div>
